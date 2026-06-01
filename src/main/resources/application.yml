@@ -1,0 +1,84 @@
+# =============================================================================
+# Application Configuration - Project Tracker Backend
+# =============================================================================
+
+spring:
+  application:
+    name: project-tracker-backend
+
+  # -------------------------------------------------------------------------
+  # DataSource Configuration (MySQL)
+  # -------------------------------------------------------------------------
+  datasource:
+    url: jdbc:mysql://localhost:3306/project_tracker_db?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 30000
+      connection-timeout: 20000
+
+  # -------------------------------------------------------------------------
+  # JPA / Hibernate Configuration
+  # -------------------------------------------------------------------------
+  jpa:
+    hibernate:
+      ddl-auto: validate           # Dùng Flyway để migrate, không để create/update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        default_batch_fetch_size: 20
+
+  # -------------------------------------------------------------------------
+  # Flyway - Database Migration
+  # -------------------------------------------------------------------------
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# =============================================================================
+# Server Configuration
+# =============================================================================
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# =============================================================================
+# JWT Configuration
+# =============================================================================
+jwt:
+  secret: ${JWT_SECRET:ProjectTrackerSecretKey2024VeryLongSecretKeyForSecurity}
+  expiration-ms: 86400000          # 24 giờ (milliseconds)
+  refresh-expiration-ms: 604800000 # 7 ngày (milliseconds)
+
+# =============================================================================
+# SpringDoc / Swagger UI Configuration
+# =============================================================================
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+logging:
+  level:
+    com.projecttracker: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/project-tracker.log

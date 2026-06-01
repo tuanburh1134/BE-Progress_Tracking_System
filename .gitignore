@@ -1,0 +1,25 @@
+### Maven ###
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+### Spring Boot ###
+*.log
+logs/
+
+### IDE ###
+.idea/
+*.iml
+.vscode/
+*.swp
+
+### Sensitive files ###
+application-prod.yml
+application-production.yml
+*.env
+
+### OS ###
+.DS_Store
+Thumbs.db
