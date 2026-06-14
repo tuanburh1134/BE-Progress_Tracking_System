@@ -18,14 +18,16 @@ public class ProjectRequest {
     @Size(min = 3, max = 200, message = "Tên dự án phải từ 3-200 ký tự")
     private String name;
 
+    @Size(max = 50, message = "Mã dự án không quá 50 ký tự")
+    private String projectCode;
+
     @Size(max = 5000, message = "Mô tả không quá 5000 ký tự")
     private String description;
 
     @NotNull(message = "Ngày bắt đầu không được để trống")
     private LocalDate startDate;
 
-    @NotNull(message = "Deadline không được để trống")
-    @Future(message = "Deadline phải là ngày trong tương lai")
+    @NotNull(message = "Ngày kết thúc không được để trống")
     private LocalDate deadline;
 
     private Project.Priority priority = Project.Priority.MEDIUM;

@@ -1,8 +1,7 @@
 package com.projecttracker.service;
 
 import com.projecttracker.dto.request.ProjectRequest;
-import com.projecttracker.dto.response.ApiResponse;
-import com.projecttracker.entity.Project;
+import com.projecttracker.dto.response.ProjectResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -16,27 +15,27 @@ public interface ProjectService {
      *
      * @param userId   ID của user
      * @param pageable Thông tin phân trang và sort
-     * @return Page<Project> kết quả
+     * @return Page<ProjectResponse> kết quả đã được convert sang DTO
      */
-    Page<Project> getUserProjects(Long userId, Pageable pageable);
+    Page<ProjectResponse> getUserProjects(Long userId, Pageable pageable);
 
     /**
      * Lấy thông tin chi tiết một dự án.
      *
      * @param projectId ID dự án
      * @param userId    ID user đang request (để kiểm tra quyền truy cập)
-     * @return Project entity
+     * @return ProjectResponse DTO
      */
-    Project getProjectById(Long projectId, Long userId);
+    ProjectResponse getProjectById(Long projectId, Long userId);
 
     /**
      * Tạo dự án mới.
      *
      * @param request Thông tin dự án cần tạo
      * @param ownerId ID của người tạo (owner)
-     * @return Project entity vừa tạo
+     * @return ProjectResponse DTO của dự án vừa tạo
      */
-    Project createProject(ProjectRequest request, Long ownerId);
+    ProjectResponse createProject(ProjectRequest request, Long ownerId);
 
     /**
      * Cập nhật thông tin dự án.
@@ -44,9 +43,9 @@ public interface ProjectService {
      * @param projectId ID dự án cần cập nhật
      * @param request   Thông tin cập nhật
      * @param userId    ID user đang request (kiểm tra quyền)
-     * @return Project entity sau cập nhật
+     * @return ProjectResponse DTO sau cập nhật
      */
-    Project updateProject(Long projectId, ProjectRequest request, Long userId);
+    ProjectResponse updateProject(Long projectId, ProjectRequest request, Long userId);
 
     /**
      * Xóa dự án.

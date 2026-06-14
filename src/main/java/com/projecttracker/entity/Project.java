@@ -39,6 +39,10 @@ public class Project {
     @Column(name = "name", nullable = false, length = 200)
     private String name;
 
+    /** Mã định danh ngắn gọn của dự án (ví dụ: ECOMM-A4) */
+    @Column(name = "project_code", length = 50)
+    private String projectCode;
+
     /** Mô tả chi tiết dự án */
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;

@@ -10,9 +10,9 @@ spring:
   # DataSource Configuration (MySQL)
   # -------------------------------------------------------------------------
   datasource:
-    url: jdbc:mysql://localhost:3306/project_tracker_db?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    url: jdbc:mysql://localhost:3306/traking?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
+    username: root
+    password: NewStrongPass!123
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
@@ -25,7 +25,7 @@ spring:
   # -------------------------------------------------------------------------
   jpa:
     hibernate:
-      ddl-auto: validate           # Dùng Flyway để migrate, không để create/update
+      ddl-auto: none           # Dùng Flyway để migrate, không để create/update/validate
     show-sql: false
     properties:
       hibernate:

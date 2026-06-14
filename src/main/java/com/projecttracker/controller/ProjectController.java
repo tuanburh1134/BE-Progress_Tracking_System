@@ -2,7 +2,7 @@ package com.projecttracker.controller;
 
 import com.projecttracker.dto.request.ProjectRequest;
 import com.projecttracker.dto.response.ApiResponse;
-import com.projecttracker.entity.Project;
+import com.projecttracker.dto.response.ProjectResponse;
 import com.projecttracker.security.UserPrincipal;
 import com.projecttracker.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,22 +36,17 @@ public class ProjectController {
     /**
      * Lấy danh sách dự án của user hiện tại (có phân trang).
      *
-     * <p>GET /api/projects?page=0&size=10&sort=createdAt,desc</p>
-     *
-     * @param currentUser User đang đăng nhập
-     * @param page        Số trang (bắt đầu từ 0)
-     * @param size        Số item mỗi trang
-     * @return Page<Project> với metadata phân trang
+     * <p>GET /api/projects?page=0&size=10</p>
      */
     @GetMapping
     @Operation(summary = "Lấy danh sách dự án", description = "Lấy tất cả dự án mà user tham gia")
-    public ResponseEntity<ApiResponse<Page<Project>>> getMyProjects(
+    public ResponseEntity<ApiResponse<Page<ProjectResponse>>> getMyProjects(
             @AuthenticationPrincipal UserPrincipal currentUser,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "20") int size) {
 
         PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Project> projects = projectService.getUserProjects(currentUser.getId(), pageable);
+        Page<ProjectResponse> projects = projectService.getUserProjects(currentUser.getId(), pageable);
         return ResponseEntity.ok(ApiResponse.success(projects, "Lấy danh sách dự án thành công"));
     }
 
@@ -59,18 +54,14 @@ public class ProjectController {
      * Lấy chi tiết một dự án theo ID.
      *
      * <p>GET /api/projects/{id}</p>
-     *
-     * @param projectId   ID của dự án
-     * @param currentUser User đang đăng nhập
-     * @return Project entity
      */
     @GetMapping("/{projectId}")
     @Operation(summary = "Lấy chi tiết dự án")
-    public ResponseEntity<ApiResponse<Project>> getProject(
+    public ResponseEntity<ApiResponse<ProjectResponse>> getProject(
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserPrincipal currentUser) {
 
-        Project project = projectService.getProjectById(projectId, currentUser.getId());
+        ProjectResponse project = projectService.getProjectById(projectId, currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(project, "Lấy thông tin dự án thành công"));
     }
 
@@ -78,18 +69,14 @@ public class ProjectController {
      * Tạo dự án mới.
      *
      * <p>POST /api/projects</p>
-     *
-     * @param request     Thông tin dự án
-     * @param currentUser User đang đăng nhập (sẽ là owner)
-     * @return 201 Created với Project entity
      */
     @PostMapping
     @Operation(summary = "Tạo dự án mới")
-    public ResponseEntity<ApiResponse<Project>> createProject(
+    public ResponseEntity<ApiResponse<ProjectResponse>> createProject(
             @Valid @RequestBody ProjectRequest request,
             @AuthenticationPrincipal UserPrincipal currentUser) {
 
-        Project project = projectService.createProject(request, currentUser.getId());
+        ProjectResponse project = projectService.createProject(request, currentUser.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(project, "Tạo dự án thành công"));
     }
@@ -98,20 +85,15 @@ public class ProjectController {
      * Cập nhật thông tin dự án.
      *
      * <p>PUT /api/projects/{id}</p>
-     *
-     * @param projectId   ID dự án cần cập nhật
-     * @param request     Thông tin cập nhật
-     * @param currentUser User đang đăng nhập (phải là owner)
-     * @return Project entity sau cập nhật
      */
     @PutMapping("/{projectId}")
     @Operation(summary = "Cập nhật dự án")
-    public ResponseEntity<ApiResponse<Project>> updateProject(
+    public ResponseEntity<ApiResponse<ProjectResponse>> updateProject(
             @PathVariable Long projectId,
             @Valid @RequestBody ProjectRequest request,
             @AuthenticationPrincipal UserPrincipal currentUser) {
 
-        Project updated = projectService.updateProject(projectId, request, currentUser.getId());
+        ProjectResponse updated = projectService.updateProject(projectId, request, currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(updated, "Cập nhật dự án thành công"));
     }
 
@@ -119,10 +101,6 @@ public class ProjectController {
      * Xóa dự án.
      *
      * <p>DELETE /api/projects/{id}</p>
-     *
-     * @param projectId   ID dự án cần xóa
-     * @param currentUser User đang đăng nhập (phải là owner)
-     * @return 200 OK không có data
      */
     @DeleteMapping("/{projectId}")
     @Operation(summary = "Xóa dự án")

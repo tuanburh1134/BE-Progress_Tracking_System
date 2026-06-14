@@ -1,6 +1,7 @@
 package com.projecttracker.service.impl;
 
 import com.projecttracker.dto.request.ProjectRequest;
+import com.projecttracker.dto.response.ProjectResponse;
 import com.projecttracker.entity.Project;
 import com.projecttracker.entity.Task;
 import com.projecttracker.entity.User;
@@ -31,22 +32,23 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Project> getUserProjects(Long userId, Pageable pageable) {
+    public Page<ProjectResponse> getUserProjects(Long userId, Pageable pageable) {
         log.debug("Lấy danh sách dự án cho userId={}", userId);
-        return projectRepository.findProjectsByUserId(userId, pageable);
+        return projectRepository.findProjectsByUserId(userId, pageable)
+                .map(ProjectResponse::from);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Project getProjectById(Long projectId, Long userId) {
+    public ProjectResponse getProjectById(Long projectId, Long userId) {
         Project project = findProjectOrThrow(projectId);
         validateUserAccess(project, userId);
-        return project;
+        return ProjectResponse.from(project);
     }
 
     @Override
     @Transactional
-    public Project createProject(ProjectRequest request, Long ownerId) {
+    public ProjectResponse createProject(ProjectRequest request, Long ownerId) {
         validateProjectDates(request);
 
         User owner = userRepository.findById(ownerId)
@@ -54,27 +56,29 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project project = Project.builder()
                 .name(request.getName())
+                .projectCode(request.getProjectCode())
                 .description(request.getDescription())
                 .startDate(request.getStartDate())
                 .deadline(request.getDeadline())
-                .priority(request.getPriority())
+                .priority(request.getPriority() != null ? request.getPriority() : Project.Priority.MEDIUM)
                 .status(Project.ProjectStatus.PLANNING)
                 .owner(owner)
                 .build();
 
         Project saved = projectRepository.save(project);
         log.info("Tạo dự án mới '{}' bởi userId={}", saved.getName(), ownerId);
-        return saved;
+        return ProjectResponse.from(saved);
     }
 
     @Override
     @Transactional
-    public Project updateProject(Long projectId, ProjectRequest request, Long userId) {
+    public ProjectResponse updateProject(Long projectId, ProjectRequest request, Long userId) {
         Project project = findProjectOrThrow(projectId);
         validateOwnerAccess(project, userId);
         validateProjectDates(request);
 
         project.setName(request.getName());
+        project.setProjectCode(request.getProjectCode());
         project.setDescription(request.getDescription());
         project.setStartDate(request.getStartDate());
         project.setDeadline(request.getDeadline());
@@ -82,7 +86,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project updated = projectRepository.save(project);
         log.info("Cập nhật dự án id={}", projectId);
-        return updated;
+        return ProjectResponse.from(updated);
     }
 
     @Override
@@ -145,8 +149,9 @@ public class ProjectServiceImpl implements ProjectService {
      * Kiểm tra deadline phải sau startDate.
      */
     private void validateProjectDates(ProjectRequest request) {
-        if (request.getDeadline().isBefore(request.getStartDate())) {
-            throw new BusinessException("Deadline phải sau ngày bắt đầu dự án");
+        if (request.getStartDate() != null && request.getDeadline() != null
+                && request.getDeadline().isBefore(request.getStartDate())) {
+            throw new BusinessException("Ngày kết thúc phải sau ngày bắt đầu dự án");
         }
     }
 

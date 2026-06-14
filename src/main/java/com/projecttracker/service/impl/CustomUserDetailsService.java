@@ -22,19 +22,40 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
+
     /**
-     * Load user từ database dựa trên userId (lưu trong JWT subject).
+     * Load user từ database.
      *
-     * @param userId String representation của userId
+     * <p>Hỗ trợ 2 trường hợp:
+     * <ul>
+     *   <li>Khi DaoAuthenticationProvider xác thực login: username là email</li>
+     *   <li>Khi JwtAuthFilter xác thực token: username là userId (dạng số)</li>
+     * </ul>
+     * </p>
+     *
+     * @param username Email hoặc userId (String) tùy context
      * @return UserDetails (UserPrincipal) của user
      * @throws UsernameNotFoundException nếu user không tồn tại
      */
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
-        User user = userRepository.findById(Long.parseLong(userId))
-                .orElseThrow(() -> new UsernameNotFoundException(
-                        "Không tìm thấy user với id: " + userId));
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user;
+
+        // Nếu là số → đây là userId từ JWT filter
+        // Nếu không → đây là email từ DaoAuthenticationProvider (login)
+        try {
+            Long userId = Long.parseLong(username);
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new UsernameNotFoundException(
+                            "Không tìm thấy user với id: " + userId));
+        } catch (NumberFormatException e) {
+            // username là email
+            user = userRepository.findByEmail(username)
+                    .orElseThrow(() -> new UsernameNotFoundException(
+                            "Không tìm thấy user với email: " + username));
+        }
+
         return new UserPrincipal(user);
     }
 }
