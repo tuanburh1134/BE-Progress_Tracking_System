@@ -89,6 +89,7 @@ public class Project {
     // Relationships
     // -----------------------------------------------------------------------
 
+        
     /** Người tạo/quản lý dự án */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
@@ -108,6 +109,7 @@ public class Project {
     // Enums
     // -----------------------------------------------------------------------
 
+        
     /** Trạng thái của dự án */
     public enum ProjectStatus {
         PLANNING,    // Đang lên kế hoạch
