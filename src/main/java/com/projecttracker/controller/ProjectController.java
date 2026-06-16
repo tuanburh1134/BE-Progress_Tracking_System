@@ -1,8 +1,10 @@
 package com.projecttracker.controller;
 
+import com.projecttracker.dto.request.InviteMemberRequest;
 import com.projecttracker.dto.request.ProjectRequest;
 import com.projecttracker.dto.response.ApiResponse;
 import com.projecttracker.dto.response.ProjectResponse;
+import com.projecttracker.dto.response.UserSearchResponse;
 import com.projecttracker.security.UserPrincipal;
 import com.projecttracker.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,8 +20,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
- * REST Controller xử lý CRUD cho dự án.
+ * REST Controller xử lý CRUD cho dự án và quản lý thành viên.
  *
  * <p>Tất cả endpoint yêu cầu JWT token (Bearer Authentication).</p>
  * <p>Base URL: /api/projects</p>
@@ -110,5 +114,58 @@ public class ProjectController {
 
         projectService.deleteProject(projectId, currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success("Xóa dự án thành công"));
+    }
+
+    // =========================================================================
+    // Member management endpoints
+    // =========================================================================
+
+    /**
+     * Lấy danh sách thành viên của dự án.
+     *
+     * <p>GET /api/projects/{id}/members</p>
+     */
+    @GetMapping("/{projectId}/members")
+    @Operation(summary = "Lấy danh sách thành viên dự án")
+    public ResponseEntity<ApiResponse<List<UserSearchResponse>>> getMembers(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+
+        List<UserSearchResponse> members = projectService.getMembers(projectId, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(members, "Lấy danh sách thành viên thành công"));
+    }
+
+    /**
+     * Mời thành viên vào dự án theo email.
+     *
+     * <p>POST /api/projects/{id}/members</p>
+     */
+    @PostMapping("/{projectId}/members")
+    @Operation(summary = "Mời thành viên vào dự án", description = "Tìm user theo email và thêm vào dự án")
+    public ResponseEntity<ApiResponse<UserSearchResponse>> addMember(
+            @PathVariable Long projectId,
+            @Valid @RequestBody InviteMemberRequest request,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+
+        UserSearchResponse member = projectService.addMember(
+                projectId, request.getEmail(), currentUser.getId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(member, "Mời thành viên thành công"));
+    }
+
+    /**
+     * Xóa thành viên khỏi dự án.
+     *
+     * <p>DELETE /api/projects/{id}/members/{memberId}</p>
+     */
+    @DeleteMapping("/{projectId}/members/{memberId}")
+    @Operation(summary = "Xóa thành viên khỏi dự án")
+    public ResponseEntity<ApiResponse<Void>> removeMember(
+            @PathVariable Long projectId,
+            @PathVariable Long memberId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+
+        projectService.removeMember(projectId, memberId, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success("Đã xóa thành viên khỏi dự án"));
     }
 }

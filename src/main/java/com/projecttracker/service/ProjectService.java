@@ -2,8 +2,11 @@ package com.projecttracker.service;
 
 import com.projecttracker.dto.request.ProjectRequest;
 import com.projecttracker.dto.response.ProjectResponse;
+import com.projecttracker.dto.response.UserSearchResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 /**
  * Service interface định nghĩa các thao tác quản lý dự án.
@@ -62,4 +65,36 @@ public interface ProjectService {
      * @param projectId ID dự án cần tính lại tiến độ
      */
     void recalculateProgress(Long projectId);
+
+    // -----------------------------------------------------------------------
+    // Member management
+    // -----------------------------------------------------------------------
+
+    /**
+     * Lấy danh sách thành viên của dự án.
+     *
+     * @param projectId ID dự án
+     * @param userId    ID user đang request (phải là owner hoặc member)
+     * @return Danh sách UserSearchResponse
+     */
+    List<UserSearchResponse> getMembers(Long projectId, Long userId);
+
+    /**
+     * Mời thành viên vào dự án theo email.
+     *
+     * @param projectId     ID dự án
+     * @param email         Email của người được mời
+     * @param currentUserId ID của người mời (phải là owner)
+     * @return UserSearchResponse của thành viên vừa được thêm
+     */
+    UserSearchResponse addMember(Long projectId, String email, Long currentUserId);
+
+    /**
+     * Xóa thành viên khỏi dự án.
+     *
+     * @param projectId     ID dự án
+     * @param memberId      ID của thành viên cần xóa
+     * @param currentUserId ID của người thực hiện (phải là owner)
+     */
+    void removeMember(Long projectId, Long memberId, Long currentUserId);
 }

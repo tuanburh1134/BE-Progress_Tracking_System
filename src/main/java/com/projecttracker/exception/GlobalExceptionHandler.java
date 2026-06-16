@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
 
         log.warn("Validation failed: {}", errors);
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error("Dữ liệu nhập vào không hợp lệ"));
+                .body(ApiResponse.error("Dữ liệu nhập vào không hợp lệ", errors));
     }
 
     /**

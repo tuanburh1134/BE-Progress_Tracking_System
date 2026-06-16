@@ -1,9 +1,13 @@
 package com.projecttracker.repository;
 
 import com.projecttracker.entity.User;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -40,4 +44,25 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return true nếu đã tồn tại
      */
     boolean existsByUsername(String username);
+
+    /**
+     * Tìm kiếm user theo email (LIKE, case-insensitive), loại trừ chính currentUser.
+     * Dùng cho chức năng mời thành viên vào dự án.
+     *
+     * @param email     Chuỗi email cần tìm
+     * @param excludeId ID của user hiện tại (loại trừ khỏi kết quả)
+     * @param pageable  Giới hạn kết quả trả về
+     * @return Danh sách user phù hợp
+     */
+    @Query("""
+            SELECT u FROM User u
+            WHERE LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))
+            AND u.id != :excludeId
+            ORDER BY u.fullName ASC
+            """)
+    List<User> searchByEmailExcluding(
+            @Param("email") String email,
+            @Param("excludeId") Long excludeId,
+            Pageable pageable
+    );
 }

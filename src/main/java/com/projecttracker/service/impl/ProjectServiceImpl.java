@@ -2,11 +2,14 @@ package com.projecttracker.service.impl;
 
 import com.projecttracker.dto.request.ProjectRequest;
 import com.projecttracker.dto.response.ProjectResponse;
+import com.projecttracker.dto.response.UserSearchResponse;
 import com.projecttracker.entity.Project;
+import com.projecttracker.entity.ProjectMember;
 import com.projecttracker.entity.Task;
 import com.projecttracker.entity.User;
 import com.projecttracker.exception.BusinessException;
 import com.projecttracker.exception.ResourceNotFoundException;
+import com.projecttracker.repository.ProjectMemberRepository;
 import com.projecttracker.repository.ProjectRepository;
 import com.projecttracker.repository.TaskRepository;
 import com.projecttracker.repository.UserRepository;
@@ -17,6 +20,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * Triển khai ProjectService - xử lý business logic quản lý dự án.
@@ -29,6 +34,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final ProjectMemberRepository projectMemberRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -112,6 +118,73 @@ public class ProjectServiceImpl implements ProjectService {
         int progress = (int) Math.round((double) doneTasks / totalTasks * 100);
         updateProjectProgress(projectId, progress);
         log.debug("Tính lại tiến độ dự án id={}: {}%", projectId, progress);
+    }
+
+    // -----------------------------------------------------------------------
+    // Member management
+    // -----------------------------------------------------------------------
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserSearchResponse> getMembers(Long projectId, Long userId) {
+        Project project = findProjectOrThrow(projectId);
+        validateUserAccess(project, userId);
+
+        return projectMemberRepository.findByProjectId(projectId)
+                .stream()
+                .map(pm -> UserSearchResponse.from(pm.getUser()))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public UserSearchResponse addMember(Long projectId, String email, Long currentUserId) {
+        Project project = findProjectOrThrow(projectId);
+        validateOwnerAccess(project, currentUserId);
+
+        // Tìm user theo email
+        User invitee = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy người dùng với email: " + email));
+
+        // Owner không thể mời chính mình
+        if (invitee.getId().equals(currentUserId)) {
+            throw new BusinessException("Bạn không thể mời chính mình vào dự án");
+        }
+
+        // Kiểm tra đã là thành viên chưa
+        if (projectMemberRepository.existsByProjectIdAndUserId(projectId, invitee.getId())) {
+            throw new BusinessException("Người dùng này đã là thành viên của dự án");
+        }
+
+        ProjectMember member = ProjectMember.builder()
+                .project(project)
+                .user(invitee)
+                .role(ProjectMember.ProjectRole.MEMBER)
+                .build();
+
+        projectMemberRepository.save(member);
+        log.info("Đã thêm userId={} vào dự án id={}", invitee.getId(), projectId);
+
+        return UserSearchResponse.from(invitee);
+    }
+
+    @Override
+    @Transactional
+    public void removeMember(Long projectId, Long memberId, Long currentUserId) {
+        Project project = findProjectOrThrow(projectId);
+        validateOwnerAccess(project, currentUserId);
+
+        // Không được xóa chính owner
+        if (memberId.equals(currentUserId)) {
+            throw new BusinessException("Không thể xóa owner khỏi dự án");
+        }
+
+        if (!projectMemberRepository.existsByProjectIdAndUserId(projectId, memberId)) {
+            throw new BusinessException("Người dùng này không phải thành viên của dự án");
+        }
+
+        projectMemberRepository.deleteByProjectIdAndUserId(projectId, memberId);
+        log.info("Đã xóa userId={} khỏi dự án id={}", memberId, projectId);
     }
 
     // -----------------------------------------------------------------------
