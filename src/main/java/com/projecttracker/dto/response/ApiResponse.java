@@ -96,9 +96,22 @@ public class ApiResponse<T> {
      * @return ApiResponse thất bại
      */
     public static <T> ApiResponse<T> error(String message) {
+        return ApiResponse.error(message, null);
+    }
+
+    /**
+     * Tạo response lỗi với thông báo và dữ liệu chi tiết.
+     *
+     * @param message Thông báo lỗi
+     * @param data    Dữ liệu chi tiết (ví dụ: validation errors)
+     * @param <T>     Kiểu dữ liệu
+     * @return ApiResponse thất bại
+     */
+    public static <T> ApiResponse<T> error(String message, T data) {
         return ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
+                .data(data)
                 .build();
     }
 }
