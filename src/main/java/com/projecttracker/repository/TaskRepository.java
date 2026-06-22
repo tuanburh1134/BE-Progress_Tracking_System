@@ -1,5 +1,6 @@
 package com.projecttracker.repository;
 
+import com.projecttracker.entity.Project;
 import com.projecttracker.entity.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -82,4 +83,72 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             AND t.actualHours IS NOT NULL
             """)
     List<Task> findCompletedTasksWithTimeData(@Param("projectId") Long projectId);
+
+    /**
+     * Đếm task theo trạng thái được giao cho một user cụ thể.
+     * Dùng cho dashboard: Công Việc Hoàn Thành / Đang Thực Hiện.
+     *
+     * @param assigneeId ID người được phân công
+     * @param status     Trạng thái cần đếm
+     * @return Số lượng task
+     */
+    long countByAssigneeIdAndStatus(Long assigneeId, Task.TaskStatus status);
+
+    /**
+     * Đếm task theo trạng thái trong tất cả dự án mà user tham gia (owner hoặc member).
+     * Dùng cho PieChart phân bổ trạng thái công việc.
+     *
+     * @param userId ID user
+     * @param status Trạng thái cần đếm
+     * @return Số lượng task
+     */
+    @Query("""
+            SELECT COUNT(t) FROM Task t
+            JOIN t.project p
+            LEFT JOIN p.members pm
+            WHERE (p.owner.id = :userId OR pm.user.id = :userId)
+            AND t.status = :status
+            """)
+    long countByUserProjectsAndStatus(@Param("userId") Long userId,
+                                      @Param("status") Task.TaskStatus status);
+
+    /**
+     * Đếm số task hoàn thành theo ngày trong khoảng thời gian (dùng cho LineChart weekly).
+     * Chỉ tính task trong các dự án mà user là owner hoặc member.
+     *
+     * @param userId    ID user
+     * @param startDate Ngày bắt đầu khoảng (inclusive)
+     * @param endDate   Ngày kết thúc khoảng (inclusive)
+     * @return Danh sách [completedDate, count] theo từng ngày
+     */
+    @Query("""
+            SELECT t.completedDate, COUNT(t) FROM Task t
+            JOIN t.project p
+            LEFT JOIN p.members pm
+            WHERE (p.owner.id = :userId OR pm.user.id = :userId)
+            AND t.status = 'DONE'
+            AND t.completedDate BETWEEN :startDate AND :endDate
+            GROUP BY t.completedDate
+            ORDER BY t.completedDate ASC
+            """)
+    List<Object[]> countCompletedTasksPerDay(@Param("userId") Long userId,
+                                             @Param("startDate") LocalDate startDate,
+                                             @Param("endDate") LocalDate endDate);
+
+    /**
+     * Đếm tổng số thành viên distinct trong tất cả dự án mà user tham gia.
+     * Dùng cho StatCard "Thành Viên Nhóm".
+     *
+     * @param userId ID user
+     * @return Số thành viên distinct (không tính bản thân user)
+     */
+    @Query("""
+            SELECT COUNT(DISTINCT pm2.user.id) FROM ProjectMember pm2
+            WHERE pm2.project.id IN (
+                SELECT DISTINCT p.id FROM Project p
+                LEFT JOIN p.members pm
+                WHERE p.owner.id = :userId OR pm.user.id = :userId
+            )
+            """)
+    long countDistinctTeamMembersByUserId(@Param("userId") Long userId);
 }

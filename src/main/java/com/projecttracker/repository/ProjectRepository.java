@@ -33,19 +33,37 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     Page<Project> findProjectsByUserId(@Param("userId") Long userId, Pageable pageable);
 
     /**
-     * Lấy danh sách dự án đang IN_PROGRESS của một user.
-     * Dùng cho dashboard tổng quan.
+     * Lấy danh sách dự án "đang hoạt động" của một user.
+     * "Đang hoạt động" = chưa hoàn thành hay hủy (PLANNING, IN_PROGRESS, ON_HOLD).
+     * Dùng cho BarChart tiến độ dashboard.
      *
      * @param userId ID của user
-     * @return Danh sách dự án đang thực hiện
+     * @return Danh sách dự án đang hoạt động
      */
     @Query("""
             SELECT DISTINCT p FROM Project p
             LEFT JOIN p.members pm
             WHERE (p.owner.id = :userId OR pm.user.id = :userId)
-            AND p.status = 'IN_PROGRESS'
+            AND p.status NOT IN ('COMPLETED', 'CANCELLED')
+            ORDER BY p.createdAt DESC
             """)
     List<Project> findActiveProjectsByUserId(@Param("userId") Long userId);
+
+    /**
+     * Đếm số dự án "đang hoạt động" của một user.
+     * "Đang hoạt động" = chưa hoàn thành hay hủy (PLANNING, IN_PROGRESS, ON_HOLD).
+     * Dùng cho StatCard "Đự Án Đang Hoạt Động".
+     *
+     * @param userId ID của user
+     * @return Số dự án đang hoạt động
+     */
+    @Query("""
+            SELECT COUNT(DISTINCT p) FROM Project p
+            LEFT JOIN p.members pm
+            WHERE (p.owner.id = :userId OR pm.user.id = :userId)
+            AND p.status NOT IN ('COMPLETED', 'CANCELLED')
+            """)
+    long countActiveProjectsByUserId(@Param("userId") Long userId);
 
     /**
      * Đếm tổng số dự án theo trạng thái của một user.
