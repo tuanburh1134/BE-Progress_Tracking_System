@@ -9,6 +9,7 @@ import com.projecttracker.dto.response.AuthResponse;
  *
  * <p>Tuân thủ nguyên tắc DIP (Dependency Inversion): các class phụ thuộc
  * vào interface này, không phụ thuộc vào implementation cụ thể.</p>
+ * Service xác thực người dùng.
  */
 public interface AuthService {
 
