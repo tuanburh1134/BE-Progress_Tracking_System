@@ -43,6 +43,12 @@ public class Project {
     @Column(name = "project_code", length = 50)
     private String projectCode;
 
+    /** Phương pháp phát triển */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sdlc", nullable =false, length = 20)
+    @Builder.Default
+    private Sdlc sdlc = Sdlc.AGILE;
+
     /** Mô tả chi tiết dự án */
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
@@ -123,5 +129,11 @@ public class Project {
         MEDIUM,
         HIGH,
         CRITICAL
+    }
+    /** Phương pháp phát triển */
+    public enum Sdlc {
+        AGILE,
+        KANBAN,
+        WATERFALL
     }
 }

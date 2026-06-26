@@ -8,26 +8,69 @@
 CREATE TABLE IF NOT EXISTS projects (
     id              BIGINT          NOT NULL AUTO_INCREMENT,
     name            VARCHAR(200)    NOT NULL,
+
+    project_code    VARCHAR(50)     NOT NULL,
     description     TEXT,
+
+    sdlc            VARCHAR(20)     NOT NULL DEFAULT 'AGILE',
+
     start_date      DATE,
     deadline        DATE,
+
     status          VARCHAR(20)     NOT NULL DEFAULT 'PLANNING',
     priority        VARCHAR(10)     NOT NULL DEFAULT 'MEDIUM',
     progress        INT             NOT NULL DEFAULT 0,
+
     owner_id        BIGINT          NOT NULL,
+
     created_at      DATETIME(6)     NOT NULL,
     updated_at      DATETIME(6),
 
     CONSTRAINT pk_projects PRIMARY KEY (id),
-    CONSTRAINT fk_projects_owner FOREIGN KEY (owner_id) REFERENCES users(id),
-    CONSTRAINT chk_projects_status CHECK (status IN ('PLANNING','IN_PROGRESS','ON_HOLD','COMPLETED','CANCELLED')),
-    CONSTRAINT chk_projects_priority CHECK (priority IN ('LOW','MEDIUM','HIGH','CRITICAL')),
-    CONSTRAINT chk_projects_progress CHECK (progress >= 0 AND progress <= 100)
+
+    CONSTRAINT uk_projects_code UNIQUE (project_code),
+
+    CONSTRAINT fk_projects_owner
+        FOREIGN KEY (owner_id)
+        REFERENCES users(id),
+
+    CONSTRAINT chk_projects_status
+        CHECK (status IN (
+            'PLANNING',
+            'IN_PROGRESS',
+            'ON_HOLD',
+            'COMPLETED',
+            'CANCELLED'
+        )),
+
+    CONSTRAINT chk_projects_priority
+        CHECK (priority IN (
+            'LOW',
+            'MEDIUM',
+            'HIGH',
+            'CRITICAL'
+        )),
+
+    CONSTRAINT chk_projects_sdlc
+        CHECK (sdlc IN (
+            'AGILE',
+            'KANBAN',
+            'WATERFALL'
+        )),
+
+    CONSTRAINT chk_projects_progress
+        CHECK (progress >= 0 AND progress <= 100)
 );
 
 CREATE INDEX idx_projects_owner_id ON projects(owner_id);
 CREATE INDEX idx_projects_status ON projects(status);
 CREATE INDEX idx_projects_deadline ON projects(deadline);
+
+CREATE UNIQUE INDEX idx_projects_code
+ON projects(project_code);
+
+CREATE INDEX idx_projects_sdlc
+ON projects(sdlc);
 
 -- Bảng project_members (quan hệ nhiều-nhiều User - Project)
 CREATE TABLE IF NOT EXISTS project_members (

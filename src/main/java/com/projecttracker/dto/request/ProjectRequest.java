@@ -31,4 +31,6 @@ public class ProjectRequest {
     private LocalDate deadline;
 
     private Project.Priority priority = Project.Priority.MEDIUM;
+
+    private Project.Sdlc sdlc = Project.Sdlc.AGILE;
 }

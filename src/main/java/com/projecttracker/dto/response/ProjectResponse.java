@@ -36,6 +36,9 @@ public class ProjectResponse {
     /** Mức ưu tiên kỹ thuật */
     private String priority;
 
+
+    private String sdlc;
+
     /** Nhãn tiếng Việt */
     private String priorityLabel;
 
@@ -78,6 +81,7 @@ public class ProjectResponse {
                 .status(project.getStatus().name())
                 .statusLabel(toStatusLabel(project.getStatus()))
                 .priority(project.getPriority().name())
+                .sdlc(project.getSdlc().name())
                 .priorityLabel(toPriorityLabel(project.getPriority()))
                 .progress(project.getProgress())
                 .startDate(project.getStartDate())

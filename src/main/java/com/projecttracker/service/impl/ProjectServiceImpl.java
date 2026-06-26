@@ -63,6 +63,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = Project.builder()
                 .name(request.getName())
                 .projectCode(request.getProjectCode())
+                .sdlc(request.getSdlc() != null ? request.getSdlc() : Project.Sdlc.AGILE)
                 .description(request.getDescription())
                 .startDate(request.getStartDate())
                 .deadline(request.getDeadline())
@@ -85,10 +86,15 @@ public class ProjectServiceImpl implements ProjectService {
 
         project.setName(request.getName());
         project.setProjectCode(request.getProjectCode());
+        if (request.getSdlc() != null) {
+            project.setSdlc(request.getSdlc());
+        }
         project.setDescription(request.getDescription());
         project.setStartDate(request.getStartDate());
         project.setDeadline(request.getDeadline());
-        project.setPriority(request.getPriority());
+        if (request.getPriority() != null) {
+            project.setPriority(request.getPriority());
+        }
 
         Project updated = projectRepository.save(project);
         log.info("Cập nhật dự án id={}", projectId);

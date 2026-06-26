@@ -10,9 +10,9 @@ spring:
   # DataSource Configuration (MySQL)
   # -------------------------------------------------------------------------
   datasource:
-    url: jdbc:mysql://localhost:3306/traking?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3307/traking?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
     username: root
-    password: NewStrongPass!123
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
