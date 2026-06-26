@@ -4,6 +4,7 @@ import com.projecttracker.dto.response.DashboardStatsResponse;
 
 /**
  * Service interface cho Dashboard – trả về thống kê tổng hợp của user.
+ * Service cho Dashboard.
  */
 public interface DashboardService {
 
