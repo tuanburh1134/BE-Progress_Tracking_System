@@ -53,7 +53,29 @@ public class ProjectController {
         Page<ProjectResponse> projects = projectService.getUserProjects(currentUser.getId(), pageable);
         return ResponseEntity.ok(ApiResponse.success(projects, "Lấy danh sách dự án thành công"));
     }
+    /**
+     * Lấy danh sách thùng rác của user hiện tại (có phân trang).
+     *
+     * <p>GET /api/trash?page=0&size=10</p>
+     */
+    @GetMapping("/trash")
+    @Operation(summary = "Lấy danh sách dự án trong Thùng rác")
+    public ResponseEntity<ApiResponse<Page<ProjectResponse>>> getDeletedProjects(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
 
+        PageRequest pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("deletedAt").descending());
+
+        Page<ProjectResponse> projects =
+                projectService.getDeletedProjects(currentUser.getId(), pageable);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(projects, "Lấy danh sách thùng rác thành công"));
+    }    
     /**
      * Lấy chi tiết một dự án theo ID.
      *
@@ -115,7 +137,39 @@ public class ProjectController {
         projectService.deleteProject(projectId, currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success("Xóa dự án thành công"));
     }
+    /**
+     * Khôi phục dự án từ Thùng rác.
+     *
+     * <p>PUT /api/projects/{id}/restore</p>
+     */
+    @PutMapping("/{projectId}/restore")
+    @Operation(summary = "Khôi phục dự án")
+    public ResponseEntity<ApiResponse<Void>> restoreProject(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
 
+        projectService.restoreProject(projectId, currentUser.getId());
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Khôi phục dự án thành công"));
+    }
+
+    /**
+     * Xóa vĩnh viễn dự án khỏi database.
+     *
+     * <p>DELETE /api/projects/{id}/permanent</p>
+     */
+    @DeleteMapping("/{projectId}/permanent")
+    @Operation(summary = "Xóa vĩnh viễn dự án")
+    public ResponseEntity<ApiResponse<Void>> permanentlyDeleteProject(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+
+        projectService.permanentlyDeleteProject(projectId, currentUser.getId());
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Đã xóa vĩnh viễn dự án"));
+    }    
     // =========================================================================
     // Member management endpoints
     // =========================================================================

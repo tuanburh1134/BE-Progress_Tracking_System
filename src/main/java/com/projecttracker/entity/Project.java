@@ -136,4 +136,12 @@ public class Project {
         KANBAN,
         WATERFALL
     }
+    /** Cờ đánh dấu dự án đã bị xóa (soft delete) */
+    @Builder.Default
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
+
+    /** Thời gian xoá cuối, tự động gán */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

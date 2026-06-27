@@ -14,55 +14,81 @@ import java.util.List;
 public interface ProjectService {
 
     /**
-     * Lấy danh sách dự án của user hiện tại (có phân trang).
+     * Lấy danh sách dự án của user hiện tại (không bao gồm dự án đã xóa).
      *
      * @param userId   ID của user
-     * @param pageable Thông tin phân trang và sort
-     * @return Page<ProjectResponse> kết quả đã được convert sang DTO
+     * @param pageable Thông tin phân trang
+     * @return Danh sách dự án
      */
     Page<ProjectResponse> getUserProjects(Long userId, Pageable pageable);
+
+    /**
+     * Lấy danh sách dự án trong Thùng rác.
+     *
+     * @param userId   ID của user
+     * @param pageable Thông tin phân trang
+     * @return Danh sách dự án đã xóa
+     */
+    Page<ProjectResponse> getDeletedProjects(Long userId, Pageable pageable);
 
     /**
      * Lấy thông tin chi tiết một dự án.
      *
      * @param projectId ID dự án
-     * @param userId    ID user đang request (để kiểm tra quyền truy cập)
-     * @return ProjectResponse DTO
+     * @param userId ID user đang request
+     * @return ProjectResponse
      */
     ProjectResponse getProjectById(Long projectId, Long userId);
 
     /**
      * Tạo dự án mới.
      *
-     * @param request Thông tin dự án cần tạo
-     * @param ownerId ID của người tạo (owner)
-     * @return ProjectResponse DTO của dự án vừa tạo
+     * @param request Thông tin dự án
+     * @param ownerId Chủ sở hữu
+     * @return ProjectResponse
      */
     ProjectResponse createProject(ProjectRequest request, Long ownerId);
 
     /**
-     * Cập nhật thông tin dự án.
+     * Cập nhật dự án.
      *
-     * @param projectId ID dự án cần cập nhật
-     * @param request   Thông tin cập nhật
-     * @param userId    ID user đang request (kiểm tra quyền)
-     * @return ProjectResponse DTO sau cập nhật
+     * @param projectId ID dự án
+     * @param request Dữ liệu cập nhật
+     * @param userId User thực hiện
+     * @return ProjectResponse
      */
-    ProjectResponse updateProject(Long projectId, ProjectRequest request, Long userId);
+    ProjectResponse updateProject(Long projectId,
+                                  ProjectRequest request,
+                                  Long userId);
 
     /**
-     * Xóa dự án.
+     * Xóa mềm dự án (đưa vào Thùng rác).
      *
-     * @param projectId ID dự án cần xóa
-     * @param userId    ID user đang request (phải là owner)
+     * @param projectId ID dự án
+     * @param userId Chủ sở hữu
      */
     void deleteProject(Long projectId, Long userId);
 
     /**
-     * Cập nhật tiến độ dự án dựa trên tỷ lệ task hoàn thành.
-     * Được gọi tự động khi có task thay đổi trạng thái.
+     * Khôi phục dự án từ Thùng rác.
      *
-     * @param projectId ID dự án cần tính lại tiến độ
+     * @param projectId ID dự án
+     * @param userId Chủ sở hữu
+     */
+    void restoreProject(Long projectId, Long userId);
+
+    /**
+     * Xóa vĩnh viễn dự án khỏi database.
+     *
+     * @param projectId ID dự án
+     * @param userId Chủ sở hữu
+     */
+    void permanentlyDeleteProject(Long projectId, Long userId);
+
+    /**
+     * Cập nhật tiến độ dự án.
+     *
+     * @param projectId ID dự án
      */
     void recalculateProgress(Long projectId);
 
@@ -71,30 +97,21 @@ public interface ProjectService {
     // -----------------------------------------------------------------------
 
     /**
-     * Lấy danh sách thành viên của dự án.
-     *
-     * @param projectId ID dự án
-     * @param userId    ID user đang request (phải là owner hoặc member)
-     * @return Danh sách UserSearchResponse
+     * Danh sách thành viên.
      */
     List<UserSearchResponse> getMembers(Long projectId, Long userId);
 
     /**
-     * Mời thành viên vào dự án theo email.
-     *
-     * @param projectId     ID dự án
-     * @param email         Email của người được mời
-     * @param currentUserId ID của người mời (phải là owner)
-     * @return UserSearchResponse của thành viên vừa được thêm
+     * Thêm thành viên.
      */
-    UserSearchResponse addMember(Long projectId, String email, Long currentUserId);
+    UserSearchResponse addMember(Long projectId,
+                                 String email,
+                                 Long currentUserId);
 
     /**
-     * Xóa thành viên khỏi dự án.
-     *
-     * @param projectId     ID dự án
-     * @param memberId      ID của thành viên cần xóa
-     * @param currentUserId ID của người thực hiện (phải là owner)
+     * Xóa thành viên.
      */
-    void removeMember(Long projectId, Long memberId, Long currentUserId);
+    void removeMember(Long projectId,
+                      Long memberId,
+                      Long currentUserId);
 }

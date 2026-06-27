@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS projects (
     created_at      DATETIME(6)     NOT NULL,
     updated_at      DATETIME(6),
 
+    deleted         BOOLEAN         NOT NULL DEFAULT FALSE, 
+    deleted_at      DATETIME(6),
+
     CONSTRAINT pk_projects PRIMARY KEY (id),
 
     CONSTRAINT uk_projects_code UNIQUE (project_code),

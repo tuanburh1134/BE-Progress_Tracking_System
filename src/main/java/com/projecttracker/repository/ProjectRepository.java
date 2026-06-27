@@ -24,14 +24,17 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
      * @param pageable Phân trang
      * @return Page<Project> theo phân trang
      */
-    @Query("""
-            SELECT DISTINCT p FROM Project p
-            LEFT JOIN p.members pm
-            WHERE p.owner.id = :userId OR pm.user.id = :userId
-            ORDER BY p.createdAt DESC
-            """)
-    Page<Project> findProjectsByUserId(@Param("userId") Long userId, Pageable pageable);
-
+        @Query("""
+        SELECT DISTINCT p
+        FROM Project p
+        LEFT JOIN p.members pm
+        WHERE (p.owner.id = :userId OR pm.user.id = :userId)
+        AND p.deleted = false
+        ORDER BY p.createdAt DESC
+        """)
+        Page<Project> findProjectsByUserId(
+                @Param("userId") Long userId,
+                Pageable pageable);
     /**
      * Lấy danh sách dự án "đang hoạt động" của một user.
      * "Đang hoạt động" = chưa hoàn thành hay hủy (PLANNING, IN_PROGRESS, ON_HOLD).
@@ -44,6 +47,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             SELECT DISTINCT p FROM Project p
             LEFT JOIN p.members pm
             WHERE (p.owner.id = :userId OR pm.user.id = :userId)
+            AND p.deleted = false
             AND p.status NOT IN ('COMPLETED', 'CANCELLED')
             ORDER BY p.createdAt DESC
             """)
@@ -61,6 +65,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             SELECT COUNT(DISTINCT p) FROM Project p
             LEFT JOIN p.members pm
             WHERE (p.owner.id = :userId OR pm.user.id = :userId)
+            AND p.deleted = false
             AND p.status NOT IN ('COMPLETED', 'CANCELLED')
             """)
     long countActiveProjectsByUserId(@Param("userId") Long userId);
@@ -77,8 +82,30 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             SELECT COUNT(DISTINCT p) FROM Project p
             LEFT JOIN p.members pm
             WHERE (p.owner.id = :userId OR pm.user.id = :userId)
+            AND p.deleted = false
             AND p.status = :status
             """)
     long countByUserIdAndStatus(@Param("userId") Long userId,
                                 @Param("status") Project.ProjectStatus status);
+        
+
+        /**
+     * query lấy Thùng rác.
+     * Dùng khôi phục dự án đã xoá tạm.
+     *
+     * @param userId ID của user
+     * @param pageable Phân trang
+     * @return Page<Project> theo phân trang
+     */
+    @Query("""
+        SELECT DISTINCT p
+        FROM Project p
+        LEFT JOIN p.members pm
+        WHERE (p.owner.id = :userId OR pm.user.id = :userId)
+        AND p.deleted = true
+        ORDER BY p.deletedAt DESC
+        """)
+        Page<Project> findDeletedProjectsByUserId(
+        @Param("userId") Long userId,
+        Pageable pageable);        
 }

@@ -20,7 +20,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Optional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -35,12 +37,21 @@ public class ProjectServiceImpl implements ProjectService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
-
+    
     @Override
     @Transactional(readOnly = true)
     public Page<ProjectResponse> getUserProjects(Long userId, Pageable pageable) {
         log.debug("Lấy danh sách dự án cho userId={}", userId);
         return projectRepository.findProjectsByUserId(userId, pageable)
+                .map(ProjectResponse::from);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProjectResponse> getDeletedProjects(Long userId, Pageable pageable) {
+        log.debug("Lấy danh sách thùng rác cho userId={}", userId);
+        return projectRepository
+                .findDeletedProjectsByUserId(userId, pageable)
                 .map(ProjectResponse::from);
     }
 
@@ -70,6 +81,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .priority(request.getPriority() != null ? request.getPriority() : Project.Priority.MEDIUM)
                 .status(Project.ProjectStatus.PLANNING)
                 .owner(owner)
+                .deleted(false)
                 .build();
 
         Project saved = projectRepository.save(project);
@@ -107,10 +119,40 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = findProjectOrThrow(projectId);
         validateOwnerAccess(project, userId);
 
-        projectRepository.delete(project);
-        log.info("Xóa dự án id={} bởi userId={}", projectId, userId);
+        project.setDeleted(true);
+        project.setDeletedAt(LocalDateTime.now());
+
+        projectRepository.save(project);
+
+        log.info("Đã chuyển dự án id={} vào thùng rác", projectId);
     }
 
+    @Override
+    @Transactional
+    public void restoreProject(Long projectId, Long userId) {
+        Project project = findProjectOrThrow(projectId);
+
+        validateOwnerAccess(project, userId);
+
+        project.setDeleted(false);
+        project.setDeletedAt(null);
+
+        projectRepository.save(project);
+
+        log.info("Khôi phục dự án id={}", projectId);
+    }
+
+    @Override
+    @Transactional
+    public void permanentlyDeleteProject(Long projectId, Long userId) {
+        Project project = findProjectOrThrow(projectId);
+
+        validateOwnerAccess(project, userId);
+
+        projectRepository.delete(project);
+
+        log.info("Đã xóa vĩnh viễn dự án id={}", projectId);
+    }
     @Override
     @Transactional
     public void recalculateProgress(Long projectId) {
