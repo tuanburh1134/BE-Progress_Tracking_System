@@ -12,7 +12,10 @@ import com.projecttracker.exception.ResourceNotFoundException;
 import com.projecttracker.repository.ProjectMemberRepository;
 import com.projecttracker.repository.ProjectRepository;
 import com.projecttracker.repository.TaskRepository;
+import com.projecttracker.repository.TeamMemberRepository;
+import com.projecttracker.repository.TeamRepository;
 import com.projecttracker.repository.UserRepository;
+import com.projecttracker.service.NotificationService;
 import com.projecttracker.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +40,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final TeamRepository teamRepository;
+    private final NotificationService notificationService;
     
     @Override
     @Transactional(readOnly = true)
@@ -281,5 +286,43 @@ public class ProjectServiceImpl implements ProjectService {
             p.setProgress(progress);
             projectRepository.save(p);
         });
+    }
+
+    @Override
+    @Transactional
+    public int addMembersFromTeam(Long projectId, Long teamId, Long ownerId) {
+        Project project = findProjectOrThrow(projectId);
+        validateOwnerAccess(project, ownerId);
+
+        var team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", "id", teamId));
+
+        int added = 0;
+        for (var tm : team.getMembers()) {
+            Long memberId = tm.getUser().getId();
+
+            // Bỏ qua owner dự án và người đã là thành viên
+            if (memberId.equals(ownerId)) continue;
+            if (projectMemberRepository.existsByProjectIdAndUserId(projectId, memberId)) continue;
+
+            ProjectMember pm = ProjectMember.builder()
+                    .project(project)
+                    .user(tm.getUser())
+                    .role(ProjectMember.ProjectRole.MEMBER)
+                    .build();
+            projectMemberRepository.save(pm);
+
+            // Gửi thông báo
+            notificationService.createNotification(
+                    memberId,
+                    "ADDED_TO_PROJECT",
+                    "Bạn đã được thêm vào dự án \"" + project.getName() + "\" qua nhóm \"" + team.getName() + "\"",
+                    projectId
+            );
+            added++;
+        }
+
+        log.info("Thêm {} thành viên từ nhóm id={} vào dự án id={}", added, teamId, projectId);
+        return added;
     }
 }

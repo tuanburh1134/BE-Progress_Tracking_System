@@ -222,4 +222,18 @@ public class ProjectController {
         projectService.removeMember(projectId, memberId, currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success("Đã xóa thành viên khỏi dự án"));
     }
+
+    /**
+     * Mời toàn bộ thành viên của nhóm vào dự án.
+     */
+    @PostMapping("/{projectId}/members/team/{teamId}")
+    @Operation(summary = "Mời toàn bộ thành viên của nhóm vào dự án")
+    public ResponseEntity<ApiResponse<Integer>> addMembersFromTeam(
+            @PathVariable Long projectId,
+            @PathVariable Long teamId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+
+        int addedCount = projectService.addMembersFromTeam(projectId, teamId, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(addedCount, "Đã thêm " + addedCount + " thành viên từ nhóm vào dự án"));
+    }
 }

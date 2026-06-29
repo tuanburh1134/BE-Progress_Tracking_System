@@ -40,6 +40,7 @@ public class SecurityConfig {
     /** Các endpoint không cần xác thực */
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/auth/**",
+            "/api/webhooks/**",
             "/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",

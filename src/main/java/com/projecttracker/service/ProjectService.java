@@ -114,4 +114,15 @@ public interface ProjectService {
     void removeMember(Long projectId,
                       Long memberId,
                       Long currentUserId);
+
+    /**
+     * Thêm toàn bộ thành viên của một nhóm vào dự án.
+     * Bỏ qua những người đã là thành viên hoặc là owner.
+     *
+     * @param projectId ID dự án
+     * @param teamId    ID nhóm
+     * @param ownerId   Owner thực hiện
+     * @return Số thành viên được thêm mới
+     */
+    int addMembersFromTeam(Long projectId, Long teamId, Long ownerId);
 }
