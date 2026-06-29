@@ -11,4 +11,6 @@ public interface BuildReportRepository extends JpaRepository<BuildReport, Long> 
     
     /** Lấy lịch sử build mới nhất lên trước */
     List<BuildReport> findAllByOrderByCreatedAtDesc();
+
+    List<BuildReport> findByProjectIdOrderByCreatedAtDesc(Long projectId);
 }

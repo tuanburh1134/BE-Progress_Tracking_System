@@ -54,4 +54,11 @@ public class WebhookController {
         List<BuildReport> reports = ciCdService.getBuildReports();
         return ResponseEntity.ok(ApiResponse.success(reports, "Lấy lịch sử CI/CD thành công"));
     }
+
+    @GetMapping("/cicd/reports/project/{projectId}")
+    @Operation(summary = "Lấy lịch sử báo cáo CI/CD của một dự án")
+    public ResponseEntity<ApiResponse<List<BuildReport>>> getBuildReportsByProject(@PathVariable Long projectId) {
+        List<BuildReport> reports = ciCdService.getBuildReportsByProject(projectId);
+        return ResponseEntity.ok(ApiResponse.success(reports, "Lấy lịch sử CI/CD của dự án thành công"));
+    }
 }

@@ -61,6 +61,10 @@ public class BuildReport {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
+
     public enum BuildStatus {
         PENDING,
         RUNNING,

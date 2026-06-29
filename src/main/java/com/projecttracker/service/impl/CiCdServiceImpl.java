@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.projecttracker.entity.BuildReport;
+import com.projecttracker.entity.Project;
 import com.projecttracker.repository.BuildReportRepository;
+import com.projecttracker.repository.ProjectRepository;
 import com.projecttracker.service.CiCdService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,7 @@ import java.util.regex.Pattern;
 public class CiCdServiceImpl implements CiCdService {
 
     private final BuildReportRepository buildReportRepository;
+    private final ProjectRepository projectRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${project.root-path}")
@@ -42,6 +45,12 @@ public class CiCdServiceImpl implements CiCdService {
     @Transactional(readOnly = true)
     public List<BuildReport> getBuildReports() {
         return buildReportRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BuildReport> getBuildReportsByProject(Long projectId) {
+        return buildReportRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
     }
 
     @Override
@@ -74,6 +83,40 @@ public class CiCdServiceImpl implements CiCdService {
             log.error("Lỗi khi parse payload webhook: {}", e.getMessage());
         }
 
+        // Parse repository URL to match project
+        String repositoryUrl = null;
+        try {
+            if (payload.containsKey("repository")) {
+                Map<String, Object> repository = (Map<String, Object>) payload.get("repository");
+                repositoryUrl = (String) repository.get("html_url");
+                if (repositoryUrl == null) {
+                    repositoryUrl = (String) repository.get("clone_url");
+                }
+            }
+        } catch (Exception e) {
+            log.error("Lỗi khi parse repository URL: {}", e.getMessage());
+        }
+
+        Project matchedProject = null;
+        if (repositoryUrl != null) {
+            String normalizedUrl = repositoryUrl.toLowerCase().trim();
+            if (normalizedUrl.endsWith(".git")) {
+                normalizedUrl = normalizedUrl.substring(0, normalizedUrl.length() - 4);
+            }
+            List<Project> projectsWithGithub = projectRepository.findByGithubLinkIsNotNull();
+            for (Project p : projectsWithGithub) {
+                String pLink = p.getGithubLink().toLowerCase().trim();
+                if (pLink.endsWith(".git")) {
+                    pLink = pLink.substring(0, pLink.length() - 4);
+                }
+                if (pLink.equals(normalizedUrl)) {
+                    matchedProject = p;
+                    log.info("Tìm thấy dự án tương ứng cho Webhook: id={}, name={}", p.getId(), p.getName());
+                    break;
+                }
+            }
+        }
+
         // Tạo bản ghi BuildReport ban đầu
         BuildReport report = BuildReport.builder()
                 .commitHash(commitHash)
@@ -83,6 +126,7 @@ public class CiCdServiceImpl implements CiCdService {
                 .status(BuildReport.BuildStatus.RUNNING)
                 .log("Khởi động tiến trình kiểm thử tự động...\n")
                 .createdAt(LocalDateTime.now())
+                .project(matchedProject)
                 .build();
 
         report = buildReportRepository.save(report);

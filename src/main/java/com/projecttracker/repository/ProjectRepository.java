@@ -108,4 +108,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         Page<Project> findDeletedProjectsByUserId(
         @Param("userId") Long userId,
         Pageable pageable);        
+
+    List<Project> findByGithubLinkIsNotNull();
 }

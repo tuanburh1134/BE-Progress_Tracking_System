@@ -11,4 +11,7 @@ public interface CiCdService {
 
     /** Lấy tất cả lịch sử báo cáo kiểm thử */
     List<BuildReport> getBuildReports();
+
+    /** Lấy lịch sử báo cáo kiểm thử của một dự án cụ thể */
+    List<BuildReport> getBuildReportsByProject(Long projectId);
 }
