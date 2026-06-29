@@ -33,4 +33,7 @@ public class ProjectRequest {
     private Project.Priority priority = Project.Priority.MEDIUM;
 
     private Project.Sdlc sdlc = Project.Sdlc.AGILE;
+
+    @Size(max = 300, message = "Đường dẫn GitHub không vượt quá 300 ký tự")
+    private String githubLink;
 }

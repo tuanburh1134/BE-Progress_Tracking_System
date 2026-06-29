@@ -87,6 +87,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .status(Project.ProjectStatus.PLANNING)
                 .owner(owner)
                 .deleted(false)
+                .githubLink(request.getGithubLink())
                 .build();
 
         Project saved = projectRepository.save(project);
@@ -112,6 +113,7 @@ public class ProjectServiceImpl implements ProjectService {
         if (request.getPriority() != null) {
             project.setPriority(request.getPriority());
         }
+        project.setGithubLink(request.getGithubLink());
 
         Project updated = projectRepository.save(project);
         log.info("Cập nhật dự án id={}", projectId);

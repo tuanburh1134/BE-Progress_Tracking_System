@@ -62,6 +62,8 @@ public class ProjectResponse {
 
     private LocalDateTime createdAt;
 
+    private String githubLink;
+
     // -----------------------------------------------------------------------
     // Static factory — convert từ entity
     // -----------------------------------------------------------------------
@@ -91,6 +93,7 @@ public class ProjectResponse {
                 .ownerName(project.getOwner() != null ? project.getOwner().getFullName() : null)
                 .ownerId(project.getOwner() != null ? project.getOwner().getId() : null)
                 .createdAt(project.getCreatedAt())
+                .githubLink(project.getGithubLink())
                 .build();
     }
 

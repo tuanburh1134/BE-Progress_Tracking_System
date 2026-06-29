@@ -81,6 +81,10 @@ public class Project {
     @Builder.Default
     private Integer progress = 0;
 
+    /** Đường dẫn GitHub repository */
+    @Column(name = "github_link", length = 300)
+    private String githubLink;
+
     /** Thời gian tạo, tự động gán */
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
