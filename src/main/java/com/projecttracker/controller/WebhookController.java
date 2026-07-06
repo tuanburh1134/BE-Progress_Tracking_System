@@ -12,11 +12,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-
+/**
+ * Controller quản lý các sự kiện CI/CD và Webhook.
+ * Đóng vai trò là điểm tiếp nhận dữ liệu từ GitHub và cung cấp dữ liệu báo cáo cho Frontend.
+ */
 @RestController
 @RequestMapping("/api")
-@RequiredArgsConstructor
-@Slf4j
+@RequiredArgsConstructor// Tự động inject các dependency thông qua constructor (Lombok)
+@Slf4j// Hỗ trợ ghi log hệ thống
 @Tag(name = "CI/CD & Webhooks", description = "Endpoints phục vụ tích hợp CI/CD tự động và webhook GitHub")
 public class WebhookController {
 
@@ -24,7 +27,10 @@ public class WebhookController {
 
     /**
      * Endpoint tiếp nhận thông tin sự kiện push từ GitHub Webhook.
-     * Cổng này công khai hoàn toàn để GitHub có thể truy cập được thông qua ngrok.
+     * 
+     * @param eventType Loại sự kiện (Header 'X-GitHub-Event' từ GitHub)
+     * @param payload   Dữ liệu JSON chi tiết về sự kiện push
+     * @return ResponseEntity thông báo trạng thái tiếp nhận
      */
     @PostMapping("/webhooks/github")
     @Operation(summary = "GitHub Webhook Receiver", description = "Đón tiếp các payload push event tự động từ GitHub")
@@ -36,11 +42,12 @@ public class WebhookController {
 
         // Chỉ xử lý sự kiện push
         if ("push".equalsIgnoreCase(eventType)) {
-            // Chạy bất đồng bộ tiến trình để tránh GitHub timeout (GitHub yêu cầu phản hồi < 10s)
+            // Chạy bất đồng bộ (async) để giải phóng request sớm, 
+            // tránh việc GitHub ngắt kết nối do vượt quá thời gian phản hồi (timeout)
             ciCdService.processWebhook(payload);
             return ResponseEntity.accepted().body(Map.of("message", "Đã nhận sự kiện push, đang chạy tiến trình CI/CD..."));
         }
-
+        // Bỏ qua các loại sự kiện khác (ví dụ: pull_request, issue,...)
         return ResponseEntity.ok(Map.of("message", "Sự kiện được bỏ qua."));
     }
 
@@ -54,7 +61,11 @@ public class WebhookController {
         List<BuildReport> reports = ciCdService.getBuildReports();
         return ResponseEntity.ok(ApiResponse.success(reports, "Lấy lịch sử CI/CD thành công"));
     }
-
+    /**
+     * Lấy danh sách lịch sử build theo ID của dự án cụ thể.
+     * 
+     * @param projectId ID của dự án cần truy vấn
+     */
     @GetMapping("/cicd/reports/project/{projectId}")
     @Operation(summary = "Lấy lịch sử báo cáo CI/CD của một dự án")
     public ResponseEntity<ApiResponse<List<BuildReport>>> getBuildReportsByProject(@PathVariable Long projectId) {
