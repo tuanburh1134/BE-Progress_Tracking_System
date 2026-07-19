@@ -75,6 +75,14 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Bạn không có quyền thực hiện thao tác này"));
     }
 
+    @ExceptionHandler(org.springframework.security.authentication.InsufficientAuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInsufficientAuthentication(
+            org.springframework.security.authentication.InsufficientAuthenticationException exception) {
+        log.warn("Authentication missing: {}", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Vui lòng đăng nhập để tiếp tục"));
+    }
+
     /**
      * Xử lý khi thông tin đăng nhập sai (401).
      *

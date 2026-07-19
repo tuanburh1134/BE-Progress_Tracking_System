@@ -94,6 +94,12 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      */
     long countByAssigneeIdAndStatus(Long assigneeId, Task.TaskStatus status);
 
+        /**
+         * Đếm số task theo trạng thái trên toàn hệ thống.
+         * Thêm để hỗ trợ các thống kê admin (tổng completed / in-progress).
+         */
+        long countByStatus(Task.TaskStatus status);
+
     /**
      * Đếm task theo trạng thái trong tất cả dự án mà user tham gia (owner hoặc member).
      * Dùng cho PieChart phân bổ trạng thái công việc.
@@ -151,4 +157,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             )
             """)
     long countDistinctTeamMembersByUserId(@Param("userId") Long userId);
+
+        /**
+         * Đếm số task quá hạn (deadline trước ngày được truyền vào), không tính task đã DONE.
+         * Default method sử dụng method derived để tránh viết JPQL với enum trực tiếp.
+         */
+        long countByDeadlineBeforeAndStatusNot(LocalDate date, Task.TaskStatus status);
+
+        default long countOverdueTasks(LocalDate date) {
+                return countByDeadlineBeforeAndStatusNot(date, Task.TaskStatus.DONE);
+        }
 }

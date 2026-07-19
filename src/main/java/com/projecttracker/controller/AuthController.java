@@ -4,6 +4,9 @@ import com.projecttracker.dto.request.LoginRequest;
 import com.projecttracker.dto.request.RegisterRequest;
 import com.projecttracker.dto.response.ApiResponse;
 import com.projecttracker.dto.response.AuthResponse;
+import com.projecttracker.entity.User;
+import com.projecttracker.repository.UserRepository;
+import com.projecttracker.security.UserPrincipal;
 import com.projecttracker.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -29,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserRepository userRepository;
 
     /**
      * Đăng nhập và nhận JWT token.
@@ -63,5 +69,27 @@ public class AuthController {
         AuthResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Đăng ký thành công"));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Thông tin user hiện tại", description = "Dùng để frontend quick-check token validity")
+    public ResponseEntity<ApiResponse<AuthResponse.UserInfo>> me(@AuthenticationPrincipal UserPrincipal currentUser) {
+        User user = userRepository.findById(currentUser.getId()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Không tìm thấy người dùng"));
+        }
+
+        AuthResponse.UserInfo userInfo = AuthResponse.UserInfo.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .avatarUrl(user.getAvatarUrl())
+                .role(user.getRole().name())
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.success(userInfo, "Thông tin người dùng"));
     }
 }

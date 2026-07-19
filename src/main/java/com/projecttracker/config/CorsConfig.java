@@ -27,21 +27,20 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Cho phép các origin từ Frontend (dev + production)
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:5173",   // Vite dev server
-                "http://localhost:3000",   // Alternative dev port
-                "http://localhost:80"      // Production nginx
-        ));
+        // Cho phép frontend dev/prod chạy ở bất kỳ origin nào, bao gồm localhost các cổng khác nhau
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000", "*"));
 
         // Các HTTP method được phép
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
         // Headers được phép trong request
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
 
         // Cho phép gửi credentials (cookies, Authorization header)
         configuration.setAllowCredentials(true);
+
+        // Cho phép frontend đọc header Authorization nếu cần
+        configuration.setExposedHeaders(List.of("Authorization"));
 
         // Cache preflight response trong 1 giờ (giảm số lượng OPTIONS request)
         configuration.setMaxAge(3600L);
