@@ -53,6 +53,10 @@ public class User {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    /** Tên tài khoản GitHub */
+    @Column(name = "github_username", length = 100)
+    private String githubUsername;
+
     /** Vai trò trong hệ thống */
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)

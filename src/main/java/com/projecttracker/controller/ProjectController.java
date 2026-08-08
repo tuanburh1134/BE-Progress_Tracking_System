@@ -3,9 +3,11 @@ package com.projecttracker.controller;
 import com.projecttracker.dto.request.InviteMemberRequest;
 import com.projecttracker.dto.request.ProjectRequest;
 import com.projecttracker.dto.response.ApiResponse;
+import com.projecttracker.dto.response.InvitationResponse;
 import com.projecttracker.dto.response.ProjectResponse;
 import com.projecttracker.dto.response.UserSearchResponse;
 import com.projecttracker.security.UserPrincipal;
+import com.projecttracker.service.InvitationService;
 import com.projecttracker.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -36,6 +38,7 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final InvitationService invitationService;
 
     /**
      * Lấy danh sách dự án của user hiện tại (có phân trang).
@@ -190,21 +193,38 @@ public class ProjectController {
     }
 
     /**
-     * Mời thành viên vào dự án theo email.
+     * Lấy danh sách lời mời đang PENDING của dự án (chỉ owner xem được).
+     *
+     * <p>GET /api/projects/{id}/invitations/pending</p>
+     */
+    @GetMapping("/{projectId}/invitations/pending")
+    @Operation(summary = "Lấy danh sách lời mời đang chờ xác nhận của dự án")
+    public ResponseEntity<ApiResponse<List<InvitationResponse>>> getPendingInvitations(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+
+        List<InvitationResponse> invitations =
+                invitationService.getPendingInvitationsByProject(projectId, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(invitations, "Lấy danh sách lời mời thành công"));
+    }
+
+    /**
+     * Mời thành viên vào dự án theo email (tạo lời mời chờ xác nhận).
      *
      * <p>POST /api/projects/{id}/members</p>
      */
     @PostMapping("/{projectId}/members")
-    @Operation(summary = "Mời thành viên vào dự án", description = "Tìm user theo email và thêm vào dự án")
-    public ResponseEntity<ApiResponse<UserSearchResponse>> addMember(
+    @Operation(summary = "Gửi lời mời tham gia dự án",
+               description = "Tạo lời mời PENDING, người được mời cần xác nhận trước khi vào nhóm")
+    public ResponseEntity<ApiResponse<InvitationResponse>> inviteMember(
             @PathVariable Long projectId,
             @Valid @RequestBody InviteMemberRequest request,
             @AuthenticationPrincipal UserPrincipal currentUser) {
 
-        UserSearchResponse member = projectService.addMember(
+        InvitationResponse invitation = invitationService.sendInvitation(
                 projectId, request.getEmail(), currentUser.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(member, "Mời thành viên thành công"));
+                .body(ApiResponse.success(invitation, "Đã gửi lời mời, đang chờ xác nhận"));
     }
 
     /**

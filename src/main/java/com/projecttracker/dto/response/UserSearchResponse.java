@@ -25,6 +25,8 @@ public class UserSearchResponse {
 
     private String role;
 
+    private String githubUsername;
+
     /**
      * Chuyển đổi từ User entity.
      */
@@ -36,6 +38,7 @@ public class UserSearchResponse {
                 .email(user.getEmail())
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole().name())
+                .githubUsername(user.getGithubUsername())
                 .build();
     }
 }

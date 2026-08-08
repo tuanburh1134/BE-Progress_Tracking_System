@@ -178,10 +178,23 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = findProjectOrThrow(projectId);
         validateUserAccess(project, userId);
 
-        return projectMemberRepository.findByProjectId(projectId)
+        List<UserSearchResponse> members = new java.util.ArrayList<>(
+            projectMemberRepository.findByProjectId(projectId)
                 .stream()
                 .map(pm -> UserSearchResponse.from(pm.getUser()))
-                .toList();
+                .toList()
+        );
+
+        // Đảm bảo owner luôn có mặt ở đầu danh sách thành viên
+        User owner = project.getOwner();
+        if (owner != null) {
+            boolean hasOwner = members.stream().anyMatch(m -> m.getId().equals(owner.getId()));
+            if (!hasOwner) {
+                members.add(0, UserSearchResponse.from(owner));
+            }
+        }
+
+        return members;
     }
 
     @Override
