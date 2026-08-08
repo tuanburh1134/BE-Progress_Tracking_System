@@ -69,4 +69,45 @@ public class UserController {
 
         return ResponseEntity.ok(ApiResponse.success(result, "Tìm kiếm thành công"));
     }
+
+    /**
+     * Lấy thông tin hồ sơ của user hiện tại.
+     *
+     * <p>GET /api/users/profile</p>
+     */
+    @GetMapping("/profile")
+    @Operation(summary = "Lấy thông tin cá nhân hiện tại")
+    public ResponseEntity<ApiResponse<UserSearchResponse>> getMyProfile(
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new com.projecttracker.exception.ResourceNotFoundException("User", "id", currentUser.getId()));
+                
+        return ResponseEntity.ok(ApiResponse.success(UserSearchResponse.from(user), "Lấy thông tin cá nhân thành công"));
+    }
+
+    /**
+     * Cập nhật thông tin hồ sơ cá nhân.
+     *
+     * <p>PUT /api/users/profile</p>
+     */
+    @PutMapping("/profile")
+    @Operation(summary = "Cập nhật thông tin cá nhân")
+    public ResponseEntity<ApiResponse<UserSearchResponse>> updateProfile(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @jakarta.validation.Valid @RequestBody com.projecttracker.dto.request.UpdateProfileRequest request) {
+        
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new com.projecttracker.exception.ResourceNotFoundException("User", "id", currentUser.getId()));
+
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName().trim());
+        }
+        if (request.getGithubUsername() != null) {
+            user.setGithubUsername(request.getGithubUsername().trim().isEmpty() ? null : request.getGithubUsername().trim());
+        }
+
+        User updatedUser = userRepository.save(user);
+        return ResponseEntity.ok(ApiResponse.success(UserSearchResponse.from(updatedUser), "Cập nhật thông tin cá nhân thành công"));
+    }
 }
