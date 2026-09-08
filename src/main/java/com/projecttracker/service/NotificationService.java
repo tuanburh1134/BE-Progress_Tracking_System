@@ -10,6 +10,16 @@ import java.util.List;
 public interface NotificationService {
 
     /**
+     * Tạo thông báo mới đồng thời tự động gửi Email thông báo tới người nhận.
+     */
+    com.projecttracker.entity.Notification createNotification(
+            com.projecttracker.entity.User recipient,
+            com.projecttracker.entity.Notification.NotificationType type,
+            String message,
+            Long referenceId
+    );
+
+    /**
      * Lấy tất cả thông báo của user (mới nhất trước).
      *
      * @param userId ID user

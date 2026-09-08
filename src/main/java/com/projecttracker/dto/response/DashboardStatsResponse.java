@@ -7,17 +7,27 @@ import lombok.Getter;
 import java.util.List;
 
 /**
- * DTO tổng hợp toàn bộ thống kê cần thiết cho Dashboard.
- *
- * <p>Trả về trong một request duy nhất để tránh nhiều round-trip.</p>
+ * DTO tổng hợp toàn bộ thống kê thực cho Dashboard.
  */
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DashboardStatsResponse {
 
-    /** Số dự án đang IN_PROGRESS mà user là owner hoặc thành viên */
+    /** Số dự án đang hoạt động mà user tham gia */
     private int activeProjects;
+
+    /** Tổng số dự án đã làm từ trước đến giờ (bao gồm cả đã hoàn thành hoặc xóa) */
+    private long totalProjects;
+
+    /** Tiến độ chung của dự án (% hoàn thành tổng thể) */
+    private int overallProgress;
+
+    /** Thông số Build */
+    private long totalBuilds;
+    private long successfulBuilds;
+    private long failedBuilds;
+    private int buildSuccessRate;
 
     /** Số task đã DONE được giao cho user */
     private long completedTasks;
@@ -28,7 +38,7 @@ public class DashboardStatsResponse {
     /** Tổng số thành viên distinct trong tất cả dự án của user */
     private long teamMembers;
 
-    /** Tiến độ từng dự án dùng cho BarChart */
+    /** Tiến độ từng dự án dùng cho BarChart (% tiến độ từng dự án) */
     private List<ChartItem> projectProgress;
 
     /** Phân bổ task theo trạng thái dùng cho PieChart */

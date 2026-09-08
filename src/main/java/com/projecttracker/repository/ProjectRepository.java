@@ -87,6 +87,17 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             """)
     long countByUserIdAndStatus(@Param("userId") Long userId,
                                 @Param("status") Project.ProjectStatus status);
+
+    /**
+     * Đếm tổng số dự án từ trước tới nay của user (không phân biệt status hay deleted).
+     * Dùng cho StatCard "Tổng số dự án đã làm từ trước đến giờ".
+     */
+    @Query("""
+            SELECT COUNT(DISTINCT p) FROM Project p
+            LEFT JOIN p.members pm
+            WHERE p.owner.id = :userId OR pm.user.id = :userId
+            """)
+    long countTotalProjectsByUserId(@Param("userId") Long userId);
         
 
         /**

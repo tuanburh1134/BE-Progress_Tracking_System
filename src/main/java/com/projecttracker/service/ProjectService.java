@@ -114,4 +114,12 @@ public interface ProjectService {
     void removeMember(Long projectId,
                       Long memberId,
                       Long currentUserId);
+
+    /**
+     * Cập nhật vai trò/quyền của thành viên trong dự án.
+     */
+    UserSearchResponse updateMemberRole(Long projectId,
+                                        Long memberId,
+                                        String newRole,
+                                        Long currentUserId);
 }

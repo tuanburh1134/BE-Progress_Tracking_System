@@ -22,6 +22,38 @@ import java.util.List;
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final com.projecttracker.service.EmailService emailService;
+
+    @Override
+    @Transactional
+    public Notification createNotification(com.projecttracker.entity.User recipient, Notification.NotificationType type, String message, Long referenceId) {
+        Notification notification = Notification.builder()
+                .recipient(recipient)
+                .type(type)
+                .message(message)
+                .referenceId(referenceId)
+                .isRead(false)
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        // Gửi email thông báo song song (Async)
+        if (recipient != null && recipient.getEmail() != null) {
+            String title = switch (type) {
+                case INVITATION_RECEIVED -> "Lời mời tham gia dự án mới";
+                case INVITATION_ACCEPTED -> "Lời mời dự án đã được chấp nhận";
+                case INVITATION_DECLINED -> "Lời mời dự án bị từ chối";
+                case TEAM_INVITATION_RECEIVED -> "Lời mời tham gia nhóm mới";
+                case TEAM_INVITATION_ACCEPTED -> "Lời mời nhóm đã được chấp nhận";
+                case TEAM_INVITATION_DECLINED -> "Lời mời nhóm bị từ chối";
+                default -> "Thông báo mới";
+            };
+
+            emailService.sendNotificationEmail(recipient.getEmail(), title, message);
+        }
+
+        return savedNotification;
+    }
 
     @Override
     @Transactional(readOnly = true)

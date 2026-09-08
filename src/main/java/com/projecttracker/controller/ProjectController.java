@@ -242,4 +242,21 @@ public class ProjectController {
         projectService.removeMember(projectId, memberId, currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success("Đã xóa thành viên khỏi dự án"));
     }
+
+    /**
+     * Nâng/hạ quyền thành viên trong dự án.
+     *
+     * <p>PUT /api/projects/{id}/members/{memberId}/role?role=MANAGER</p>
+     */
+    @PutMapping("/{projectId}/members/{memberId}/role")
+    @Operation(summary = "Cập nhật vai trò/quyền của thành viên trong dự án")
+    public ResponseEntity<ApiResponse<UserSearchResponse>> updateMemberRole(
+            @PathVariable Long projectId,
+            @PathVariable Long memberId,
+            @RequestParam String role,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+
+        UserSearchResponse updatedMember = projectService.updateMemberRole(projectId, memberId, role, currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(updatedMember, "Cập nhật vai trò thành viên thành công"));
+    }
 }

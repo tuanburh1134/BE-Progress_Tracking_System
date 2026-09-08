@@ -6,6 +6,7 @@ import com.projecttracker.exception.BusinessException;
 import com.projecttracker.exception.ResourceNotFoundException;
 import com.projecttracker.repository.*;
 import com.projecttracker.service.InvitationService;
+import com.projecttracker.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class InvitationServiceImpl implements InvitationService {
     private final ProjectRepository       projectRepository;
     private final UserRepository          userRepository;
     private final ProjectMemberRepository projectMemberRepository;
-    private final NotificationRepository  notificationRepository;
+    private final NotificationService     notificationService;
 
     // -----------------------------------------------------------------------
 
@@ -76,14 +77,12 @@ public class InvitationServiceImpl implements InvitationService {
         // Tạo Notification cho invitee
         String message = String.format("'%s' đã mời bạn tham gia dự án '%s'",
                 inviter.getFullName(), project.getName());
-        Notification notification = Notification.builder()
-                .recipient(invitee)
-                .type(Notification.NotificationType.INVITATION_RECEIVED)
-                .message(message)
-                .referenceId(invitation.getId())
-                .isRead(false)
-                .build();
-        notificationRepository.save(notification);
+        notificationService.createNotification(
+                invitee,
+                Notification.NotificationType.INVITATION_RECEIVED,
+                message,
+                invitation.getId()
+        );
 
         log.info("Đã gửi lời mời từ userId={} đến email={} vào dự án id={}",
                 inviterId, inviteeEmail, projectId);
@@ -120,14 +119,12 @@ public class InvitationServiceImpl implements InvitationService {
         // Thông báo cho owner
         String message = String.format("'%s' đã chấp nhận lời mời tham gia dự án '%s'",
                 invitation.getInvitee().getFullName(), invitation.getProject().getName());
-        Notification notification = Notification.builder()
-                .recipient(invitation.getInviter())
-                .type(Notification.NotificationType.INVITATION_ACCEPTED)
-                .message(message)
-                .referenceId(invitationId)
-                .isRead(false)
-                .build();
-        notificationRepository.save(notification);
+        notificationService.createNotification(
+                invitation.getInviter(),
+                Notification.NotificationType.INVITATION_ACCEPTED,
+                message,
+                invitationId
+        );
 
         log.info("userId={} đã chấp nhận lời mời invitationId={}", userId, invitationId);
     }
@@ -147,14 +144,12 @@ public class InvitationServiceImpl implements InvitationService {
         // Thông báo cho owner
         String message = String.format("'%s' đã từ chối lời mời tham gia dự án '%s'",
                 invitation.getInvitee().getFullName(), invitation.getProject().getName());
-        Notification notification = Notification.builder()
-                .recipient(invitation.getInviter())
-                .type(Notification.NotificationType.INVITATION_DECLINED)
-                .message(message)
-                .referenceId(invitationId)
-                .isRead(false)
-                .build();
-        notificationRepository.save(notification);
+        notificationService.createNotification(
+                invitation.getInviter(),
+                Notification.NotificationType.INVITATION_DECLINED,
+                message,
+                invitationId
+        );
 
         log.info("userId={} đã từ chối lời mời invitationId={}", userId, invitationId);
     }

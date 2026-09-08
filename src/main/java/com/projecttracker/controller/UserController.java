@@ -29,6 +29,8 @@ import java.util.List;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final com.projecttracker.service.OtpService otpService;
 
     /**
      * Tìm kiếm user theo email để mời vào dự án.
@@ -109,5 +111,46 @@ public class UserController {
 
         User updatedUser = userRepository.save(user);
         return ResponseEntity.ok(ApiResponse.success(UserSearchResponse.from(updatedUser), "Cập nhật thông tin cá nhân thành công"));
+    }
+
+    /**
+     * Xác thực mã OTP đổi mật khẩu (Bước 1).
+     *
+     * <p>POST /api/users/verify-otp</p>
+     */
+    @PostMapping("/verify-otp")
+    @Operation(summary = "Xác thực OTP đổi mật khẩu (Bước 1)")
+    public ResponseEntity<ApiResponse<String>> verifyOtp(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @jakarta.validation.Valid @RequestBody com.projecttracker.dto.request.VerifyOtpRequest request) {
+
+        otpService.verifyOtp(currentUser.getEmail(), request.getOtpCode(), "CHANGE_PASSWORD");
+        return ResponseEntity.ok(ApiResponse.success("Xác thực mã OTP thành công! Vui lòng nhập mật khẩu mới.", "Xác thực OTP thành công"));
+    }
+
+    /**
+     * Thực hiện đổi mật khẩu (Bước 2).
+     *
+     * <p>POST /api/users/change-password</p>
+     */
+    @PostMapping("/change-password")
+    @Operation(summary = "Đổi mật khẩu tài khoản (Bước 2)")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @jakarta.validation.Valid @RequestBody com.projecttracker.dto.request.ChangePasswordRequest request) {
+
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new com.projecttracker.exception.ResourceNotFoundException("User", "id", currentUser.getId()));
+
+        // Kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new com.projecttracker.exception.BusinessException("Mật khẩu cũ không chính xác!");
+        }
+
+        // Cập nhật mật khẩu mới
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công! Vui lòng sử dụng mật khẩu mới cho lần đăng nhập tiếp theo.", "Đổi mật khẩu thành công"));
     }
 }

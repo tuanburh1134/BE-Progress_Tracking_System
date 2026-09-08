@@ -1,5 +1,6 @@
 package com.projecttracker.service;
 
+import com.projecttracker.dto.request.GoogleLoginRequest;
 import com.projecttracker.dto.request.LoginRequest;
 import com.projecttracker.dto.request.RegisterRequest;
 import com.projecttracker.dto.response.AuthResponse;
@@ -28,4 +29,12 @@ public interface AuthService {
      * @return AuthResponse với token để đăng nhập ngay sau khi đăng ký
      */
     AuthResponse register(RegisterRequest request);
+
+    /**
+     * Đăng nhập hoặc tự động đăng ký bằng tài khoản Google (Google Sign-In).
+     *
+     * @param request Chứa Google ID token
+     * @return AuthResponse chứa JWT token và thông tin user
+     */
+    AuthResponse googleLogin(GoogleLoginRequest request);
 }

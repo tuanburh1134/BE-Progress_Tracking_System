@@ -29,6 +29,24 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final com.projecttracker.service.OtpService otpService;
+
+    /**
+     * Gửi mã OTP xác thực qua Email.
+     *
+     * <p>POST /api/auth/send-otp</p>
+     */
+    @PostMapping("/send-otp")
+    @Operation(summary = "Gửi mã OTP qua Email", description = "Tạo và gửi mã xác thực OTP 6 số đến email")
+    public ResponseEntity<ApiResponse<String>> sendOtp(
+            @Valid @RequestBody com.projecttracker.dto.request.SendOtpRequest request) {
+
+        otpService.generateAndSendOtp(request.getEmail(), request.getType());
+        return ResponseEntity.ok(ApiResponse.success(
+                "Mã OTP đã được gửi đến email " + request.getEmail() + ". Vui lòng kiểm tra hộp thư!",
+                "Gửi OTP thành công"
+        ));
+    }
 
     /**
      * Đăng nhập và nhận JWT token.
@@ -48,20 +66,37 @@ public class AuthController {
     }
 
     /**
-     * Đăng ký tài khoản mới.
+     * Đăng ký tài khoản mới kèm xác thực OTP.
      *
      * <p>POST /api/auth/register</p>
      *
-     * @param request Body chứa thông tin đăng ký
+     * @param request Body chứa thông tin đăng ký và mã OTP
      * @return 201 Created với JWT token (đăng nhập ngay sau khi đăng ký)
      */
     @PostMapping("/register")
-    @Operation(summary = "Đăng ký tài khoản", description = "Tạo tài khoản mới và nhận JWT token")
+    @Operation(summary = "Đăng ký tài khoản", description = "Xác thực OTP và tạo tài khoản mới")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
             @Valid @RequestBody RegisterRequest request) {
 
         AuthResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Đăng ký thành công"));
+    }
+
+    /**
+     * Đăng nhập hoặc tự động đăng ký bằng tài khoản Google.
+     *
+     * <p>POST /api/auth/google</p>
+     *
+     * @param request Body chứa Google ID Token (credential)
+     * @return 200 OK với JWT token và thông tin user
+     */
+    @PostMapping("/google")
+    @Operation(summary = "Đăng nhập bằng Google", description = "Xác thực Google ID Token và nhận JWT access token")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleLogin(
+            @Valid @RequestBody com.projecttracker.dto.request.GoogleLoginRequest request) {
+
+        AuthResponse response = authService.googleLogin(request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Đăng nhập bằng Google thành công"));
     }
 }

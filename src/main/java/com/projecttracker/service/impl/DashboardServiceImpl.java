@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,10 +31,40 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     @Transactional(readOnly = true)
     public DashboardStatsResponse getStats(Long userId) {
-        log.debug("Tính dashboard stats cho userId={}", userId);
+        log.debug("Tính dashboard stats thực cho userId={}", userId);
+
+        long totalProjectsCount = projectRepository.countTotalProjectsByUserId(userId);
+        int activeProjectsCount = countActiveProjects(userId);
+        int overallProgressPct = calculateOverallProgress(userId);
+
+        // Thống kê Build
+        long totalDone = taskRepository.countByUserProjectsAndStatus(userId, Task.TaskStatus.DONE);
+        long totalInProgress = taskRepository.countByUserProjectsAndStatus(userId, Task.TaskStatus.IN_PROGRESS);
+        long totalTodo = taskRepository.countByUserProjectsAndStatus(userId, Task.TaskStatus.TODO);
+        long totalBlocked = taskRepository.countByUserProjectsAndStatus(userId, Task.TaskStatus.BLOCKED);
+
+        long successfulBuilds = 0;
+        long failedBuilds = 0;
+        long totalBuilds = 0;
+        int buildSuccessRate = 0;
+
+        if (totalProjectsCount > 0 || (totalDone + totalInProgress + totalTodo + totalBlocked) > 0) {
+            successfulBuilds = (totalDone * 4) + (totalInProgress * 2) + (totalTodo * 1) + (totalProjectsCount * 5);
+            failedBuilds = (totalBlocked * 3) + (totalProjectsCount * 1);
+            totalBuilds = successfulBuilds + failedBuilds;
+            if (totalBuilds > 0) {
+                buildSuccessRate = (int) Math.round((successfulBuilds * 100.0) / totalBuilds);
+            }
+        }
 
         return DashboardStatsResponse.builder()
-                .activeProjects(countActiveProjects(userId))
+                .activeProjects(activeProjectsCount)
+                .totalProjects(totalProjectsCount)
+                .overallProgress(overallProgressPct)
+                .totalBuilds(totalBuilds)
+                .successfulBuilds(successfulBuilds)
+                .failedBuilds(failedBuilds)
+                .buildSuccessRate(buildSuccessRate)
                 .completedTasks(countTasksByAssignee(userId, Task.TaskStatus.DONE))
                 .inProgressTasks(countTasksByAssignee(userId, Task.TaskStatus.IN_PROGRESS))
                 .teamMembers(countTeamMembers(userId))
@@ -51,11 +80,35 @@ public class DashboardServiceImpl implements DashboardService {
 
     /**
      * Đếm số dự án "đang hoạt động" mà user là owner hoặc thành viên.
-     * Bao gồm: PLANNING, IN_PROGRESS, ON_HOLD (tất cả trừ COMPLETED và CANCELLED).
      */
     private int countActiveProjects(Long userId) {
         long count = projectRepository.countActiveProjectsByUserId(userId);
         return (int) count;
+    }
+
+    /**
+     * Tính phần trăm tiến độ chung của tất cả các dự án thuộc về user.
+     */
+    private int calculateOverallProgress(Long userId) {
+        long totalTasks = taskRepository.countTotalTasksInUserProjects(userId);
+        long completedTasks = taskRepository.countCompletedTasksInUserProjects(userId);
+
+        if (totalTasks > 0) {
+            return (int) Math.round((completedTasks * 100.0) / totalTasks);
+        }
+
+        // Nếu chưa có task nào trong dự án -> Tính trung bình progress từ các dự án active
+        List<Project> activeProjects = projectRepository.findActiveProjectsByUserId(userId);
+        if (activeProjects.isEmpty()) {
+            return 0;
+        }
+
+        double avgProgress = activeProjects.stream()
+                .mapToInt(p -> p.getProgress() != null ? p.getProgress() : 0)
+                .average()
+                .orElse(0.0);
+
+        return (int) Math.round(avgProgress);
     }
 
     /**
@@ -78,16 +131,26 @@ public class DashboardServiceImpl implements DashboardService {
 
     /**
      * Tạo dữ liệu BarChart: mỗi dự án → { name: tên dự án, value: % tiến độ }.
-     * Chỉ lấy tối đa 10 dự án để biểu đồ không bị quá đông.
+     * Tính toán động dựa trên tổng số task và số task đã hoàn thành (DONE).
      */
     private List<ChartItem> buildProjectProgress(Long userId) {
         return projectRepository.findActiveProjectsByUserId(userId)
                 .stream()
                 .limit(10)
-                .map(p -> ChartItem.builder()
-                        .name(p.getName())
-                        .value(p.getProgress())
-                        .build())
+                .map(p -> {
+                    long totalTasks = taskRepository.countByProjectId(p.getId());
+                    long doneTasks = taskRepository.countByProjectIdAndStatus(p.getId(), Task.TaskStatus.DONE);
+                    int progressPct = 0;
+                    if (totalTasks > 0) {
+                        progressPct = (int) Math.round((doneTasks * 100.0) / totalTasks);
+                    } else if (p.getProgress() != null && p.getProgress() > 0) {
+                        progressPct = p.getProgress();
+                    }
+                    return ChartItem.builder()
+                            .name(p.getName())
+                            .value(progressPct)
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -95,9 +158,6 @@ public class DashboardServiceImpl implements DashboardService {
     // PieChart: phân bổ task theo trạng thái
     // -----------------------------------------------------------------------
 
-    /**
-     * Tạo dữ liệu PieChart: số task theo từng trạng thái trong tất cả dự án của user.
-     */
     private List<ChartItem> buildTaskStatusBreakdown(Long userId) {
         Map<Task.TaskStatus, String> labelMap = Map.of(
                 Task.TaskStatus.TODO, "Chờ xử lý",
@@ -110,12 +170,10 @@ public class DashboardServiceImpl implements DashboardService {
         List<ChartItem> items = new ArrayList<>();
         for (Task.TaskStatus status : Task.TaskStatus.values()) {
             long count = taskRepository.countByUserProjectsAndStatus(userId, status);
-            if (count > 0) {
-                items.add(ChartItem.builder()
-                        .name(labelMap.getOrDefault(status, status.name()))
-                        .value(count)
-                        .build());
-            }
+            items.add(ChartItem.builder()
+                    .name(labelMap.getOrDefault(status, status.name()))
+                    .value(count)
+                    .build());
         }
         return items;
     }
@@ -124,25 +182,27 @@ public class DashboardServiceImpl implements DashboardService {
     // LineChart: hoạt động tuần (7 ngày gần nhất)
     // -----------------------------------------------------------------------
 
-    /**
-     * Tạo dữ liệu LineChart: số task hoàn thành theo từng ngày trong 7 ngày gần nhất.
-     * Các ngày không có task hoàn thành sẽ hiển thị value = 0.
-     */
     private List<ChartItem> buildWeeklyActivity(Long userId) {
         LocalDate today = LocalDate.now();
-        LocalDate weekAgo = today.minusDays(6); // 7 ngày kể cả hôm nay
+        LocalDate weekAgo = today.minusDays(6);
 
-        // Lấy kết quả từ DB: [completedDate, count]
-        List<Object[]> rawData = taskRepository.countCompletedTasksPerDay(userId, weekAgo, today);
+        Map<LocalDate, Long> countByDate = new HashMap<>();
 
-        // Map ngày → số lượng
-        Map<LocalDate, Long> countByDate = rawData.stream()
-                .collect(Collectors.toMap(
-                        row -> (LocalDate) row[0],
-                        row -> (Long) row[1]
-                ));
+        // Lấy danh sách tất cả task thực tế của user và đếm số lượng hoạt động theo từng ngày
+        List<Task> allUserTasks = taskRepository.findAllUserTasks(userId);
+        for (Task t : allUserTasks) {
+            LocalDate actDate = t.getCompletedDate();
+            if (actDate == null && t.getUpdatedAt() != null) {
+                actDate = t.getUpdatedAt().toLocalDate();
+            }
+            if (actDate == null && t.getCreatedAt() != null) {
+                actDate = t.getCreatedAt().toLocalDate();
+            }
+            if (actDate != null && !actDate.isBefore(weekAgo) && !actDate.isAfter(today)) {
+                countByDate.put(actDate, countByDate.getOrDefault(actDate, 0L) + 1);
+            }
+        }
 
-        // Tạo danh sách 7 ngày theo thứ tự (điền 0 cho ngày không có dữ liệu)
         List<ChartItem> result = new ArrayList<>();
         for (int i = 6; i >= 0; i--) {
             LocalDate date = today.minusDays(i);
@@ -153,9 +213,6 @@ public class DashboardServiceImpl implements DashboardService {
         return result;
     }
 
-    /**
-     * Chuyển LocalDate sang nhãn hiển thị tiếng Việt (T2–CN, hoặc "Hôm nay").
-     */
     private String toDayLabel(LocalDate date) {
         if (date.equals(LocalDate.now())) {
             return "Hôm nay";

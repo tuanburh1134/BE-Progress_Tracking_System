@@ -181,16 +181,22 @@ public class ProjectServiceImpl implements ProjectService {
         List<UserSearchResponse> members = new java.util.ArrayList<>(
             projectMemberRepository.findByProjectId(projectId)
                 .stream()
-                .map(pm -> UserSearchResponse.from(pm.getUser()))
+                .map(pm -> UserSearchResponse.from(pm.getUser(), pm.getRole().name()))
                 .toList()
         );
 
-        // Đảm bảo owner luôn có mặt ở đầu danh sách thành viên
+        // Đảm bảo owner luôn có mặt ở đầu danh sách thành viên với role OWNER
         User owner = project.getOwner();
         if (owner != null) {
             boolean hasOwner = members.stream().anyMatch(m -> m.getId().equals(owner.getId()));
             if (!hasOwner) {
-                members.add(0, UserSearchResponse.from(owner));
+                members.add(0, UserSearchResponse.from(owner, "OWNER"));
+            } else {
+                members = members.stream()
+                        .map(m -> m.getId().equals(owner.getId())
+                                ? UserSearchResponse.from(owner, "OWNER")
+                                : m)
+                        .toList();
             }
         }
 
@@ -226,7 +232,7 @@ public class ProjectServiceImpl implements ProjectService {
         projectMemberRepository.save(member);
         log.info("Đã thêm userId={} vào dự án id={}", invitee.getId(), projectId);
 
-        return UserSearchResponse.from(invitee);
+        return UserSearchResponse.from(invitee, ProjectMember.ProjectRole.MEMBER.name());
     }
 
     @Override
@@ -246,6 +252,30 @@ public class ProjectServiceImpl implements ProjectService {
 
         projectMemberRepository.deleteByProjectIdAndUserId(projectId, memberId);
         log.info("Đã xóa userId={} khỏi dự án id={}", memberId, projectId);
+    }
+
+    @Override
+    @Transactional
+    public UserSearchResponse updateMemberRole(Long projectId, Long memberId, String newRole, Long currentUserId) {
+        Project project = findProjectOrThrow(projectId);
+        validateOwnerAccess(project, currentUserId);
+
+        if (project.getOwner() != null && project.getOwner().getId().equals(memberId)) {
+            throw new BusinessException("Không thể thay đổi vai trò của Trưởng nhóm (Owner)");
+        }
+
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy thành viên trong dự án"));
+
+        try {
+            ProjectMember.ProjectRole roleEnum = ProjectMember.ProjectRole.valueOf(newRole.toUpperCase());
+            member.setRole(roleEnum);
+            member = projectMemberRepository.save(member);
+            log.info("Cập nhật vai trò userId={} thành {} trong dự án id={}", memberId, roleEnum, projectId);
+            return UserSearchResponse.from(member.getUser(), member.getRole().name());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("Vai trò không hợp lệ: " + newRole);
+        }
     }
 
     // -----------------------------------------------------------------------

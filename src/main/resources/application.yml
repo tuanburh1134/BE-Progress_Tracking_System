@@ -43,6 +43,28 @@ spring:
     out-of-order: true
     ignore-migration-patterns: "*:pending"
 
+  # -------------------------------------------------------------------------
+  # Spring Mail (Gmail SMTP)
+  # -------------------------------------------------------------------------
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_MAIL_USERNAME:cuongcuong12302@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:jfxqibvofsmzrouc}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: "*"
+            protocols: TLSv1.2
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+
 # =============================================================================
 # Server Configuration
 # =============================================================================

@@ -68,8 +68,11 @@ public class Notification {
     // -----------------------------------------------------------------------
 
     public enum NotificationType {
-        INVITATION_RECEIVED,  // Bạn nhận được lời mời vào dự án
-        INVITATION_ACCEPTED,  // Người được mời đã chấp nhận
-        INVITATION_DECLINED   // Người được mời đã từ chối
+        INVITATION_RECEIVED,        // Bạn nhận được lời mời vào dự án
+        INVITATION_ACCEPTED,        // Người được mời đã chấp nhận vào dự án
+        INVITATION_DECLINED,        // Người được mời đã từ chối vào dự án
+        TEAM_INVITATION_RECEIVED,   // Bạn nhận được lời mời vào nhóm
+        TEAM_INVITATION_ACCEPTED,   // Người được mời đã chấp nhận vào nhóm
+        TEAM_INVITATION_DECLINED    // Người được mời đã từ chối vào nhóm
     }
 }

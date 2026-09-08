@@ -95,7 +95,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     long countByAssigneeIdAndStatus(Long assigneeId, Task.TaskStatus status);
 
     /**
-     * Đếm task theo trạng thái trong tất cả dự án mà user tham gia (owner hoặc member).
+     * Đếm task theo trạng thái trong tất cả dự án mà user tham gia (owner, member, assignee hoặc creator).
      * Dùng cho PieChart phân bổ trạng thái công việc.
      *
      * @param userId ID user
@@ -103,29 +103,40 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      * @return Số lượng task
      */
     @Query("""
-            SELECT COUNT(t) FROM Task t
+            SELECT COUNT(DISTINCT t.id) FROM Task t
             JOIN t.project p
             LEFT JOIN p.members pm
-            WHERE (p.owner.id = :userId OR pm.user.id = :userId)
+            WHERE (p.owner.id = :userId OR pm.user.id = :userId OR (t.assignee IS NOT NULL AND t.assignee.id = :userId) OR (t.createdBy IS NOT NULL AND t.createdBy.id = :userId))
+            AND (p.deleted = false OR p.deleted IS NULL)
             AND t.status = :status
             """)
     long countByUserProjectsAndStatus(@Param("userId") Long userId,
                                       @Param("status") Task.TaskStatus status);
 
     /**
-     * Đếm số task hoàn thành theo ngày trong khoảng thời gian (dùng cho LineChart weekly).
-     * Chỉ tính task trong các dự án mà user là owner hoặc member.
+     * Lấy tất cả task trong các dự án của user để tính toán hoạt động tuần (LineChart).
      *
-     * @param userId    ID user
-     * @param startDate Ngày bắt đầu khoảng (inclusive)
-     * @param endDate   Ngày kết thúc khoảng (inclusive)
-     * @return Danh sách [completedDate, count] theo từng ngày
+     * @param userId ID user
+     * @return Danh sách task
      */
     @Query("""
-            SELECT t.completedDate, COUNT(t) FROM Task t
+            SELECT DISTINCT t FROM Task t
             JOIN t.project p
             LEFT JOIN p.members pm
-            WHERE (p.owner.id = :userId OR pm.user.id = :userId)
+            WHERE (p.owner.id = :userId OR pm.user.id = :userId OR (t.assignee IS NOT NULL AND t.assignee.id = :userId) OR (t.createdBy IS NOT NULL AND t.createdBy.id = :userId))
+            AND (p.deleted = false OR p.deleted IS NULL)
+            """)
+    List<Task> findAllUserTasks(@Param("userId") Long userId);
+
+    /**
+     * Đếm số task hoàn thành theo ngày trong khoảng thời gian (dùng cho LineChart weekly).
+     */
+    @Query("""
+            SELECT t.completedDate, COUNT(DISTINCT t.id) FROM Task t
+            JOIN t.project p
+            LEFT JOIN p.members pm
+            WHERE (p.owner.id = :userId OR pm.user.id = :userId OR (t.assignee IS NOT NULL AND t.assignee.id = :userId) OR (t.createdBy IS NOT NULL AND t.createdBy.id = :userId))
+            AND (p.deleted = false OR p.deleted IS NULL)
             AND t.status = 'DONE'
             AND t.completedDate BETWEEN :startDate AND :endDate
             GROUP BY t.completedDate
@@ -151,4 +162,29 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             )
             """)
     long countDistinctTeamMembersByUserId(@Param("userId") Long userId);
+
+    /**
+     * Đếm tổng số task trong tất cả dự án chưa xóa của user.
+     */
+    @Query("""
+            SELECT COUNT(DISTINCT t.id) FROM Task t
+            JOIN t.project p
+            LEFT JOIN p.members pm
+            WHERE (p.owner.id = :userId OR pm.user.id = :userId OR (t.assignee IS NOT NULL AND t.assignee.id = :userId) OR (t.createdBy IS NOT NULL AND t.createdBy.id = :userId))
+            AND (p.deleted = false OR p.deleted IS NULL)
+            """)
+    long countTotalTasksInUserProjects(@Param("userId") Long userId);
+
+    /**
+     * Đếm số task đã DONE trong tất cả dự án chưa xóa của user.
+     */
+    @Query("""
+            SELECT COUNT(DISTINCT t.id) FROM Task t
+            JOIN t.project p
+            LEFT JOIN p.members pm
+            WHERE (p.owner.id = :userId OR pm.user.id = :userId OR (t.assignee IS NOT NULL AND t.assignee.id = :userId) OR (t.createdBy IS NOT NULL AND t.createdBy.id = :userId))
+            AND (p.deleted = false OR p.deleted IS NULL)
+            AND t.status = 'DONE'
+            """)
+    long countCompletedTasksInUserProjects(@Param("userId") Long userId);
 }
